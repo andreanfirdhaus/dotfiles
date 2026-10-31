@@ -219,7 +219,7 @@ DeviceListBase {
                         selected: row.selected
                         hovered: row.isHovered
                         accented: row.busy || modelData.active
-                        glyph: Services.Wifi.signalGlyph((Number(modelData.signal ?? 0) || 0) / 100)
+                        glyph: Services.Nmcli.signalGlyph((Number(modelData.signal ?? 0) || 0) / 100)
                         title: modelData.ssid || "Hidden network"
                         subtitle: root.rowSubText(modelData)
                         reserveRight: 82

@@ -24,7 +24,7 @@ Item {
             return "󰤯";
         if (root.netDegraded)
             return "󰤫";
-        return Services.Wifi.signalGlyph((root.wifiNet?.signal ?? 0) / 100);
+        return Services.Nmcli.signalGlyph((root.wifiNet?.signal ?? 0) / 100);
     }
     readonly property string wifiText: {
         if (root.isWired) {

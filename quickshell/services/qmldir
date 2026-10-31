@@ -15,5 +15,4 @@ singleton Power 1.0 Power.qml
 singleton RunMode 1.0 RunMode.qml
 singleton Settings 1.0 Settings.qml
 singleton Wallpaper 1.0 Wallpaper.qml
-singleton Wifi 1.0 Wifi.qml
 AtomicWriter 1.0 AtomicWriter.qml

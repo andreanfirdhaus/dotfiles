@@ -354,7 +354,7 @@ Item {
                     if (Services.Nmcli.connected == null)
                         return "󰤯  Not connected";
                     const level = Number(Services.Nmcli.connected?.signal ?? 0) || 0;
-                    return Services.Wifi.signalGlyph(level / 100) + "  " + (Services.Nmcli.connected.ssid ?? "Wi-Fi");
+                    return Services.Nmcli.signalGlyph(level / 100) + "  " + (Services.Nmcli.connected.ssid ?? "Wi-Fi");
                 }
                 color: (Services.Nmcli.wiredConnected || (Services.Nmcli.wifiEnabled && Services.Nmcli.connected != null)) ? Services.Theme.fg : Services.Theme.dim
                 font.family: Services.Theme.font

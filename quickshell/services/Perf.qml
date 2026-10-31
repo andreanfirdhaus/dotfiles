@@ -84,7 +84,7 @@ Singleton {
     }
     Timer {
         id: poller
-        interval: 4000
+        interval: 8000
         running: !perf.suspended
         repeat: true
         triggeredOnStart: true

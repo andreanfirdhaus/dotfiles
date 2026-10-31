@@ -55,7 +55,7 @@ Singleton {
 
     Timer {
         id: poller
-        interval: 15000
+        interval: 30000
         running: asus.hasAsusctl || asus.hasPlatformProfile || asus.hasChargeControl
         repeat: true
         onTriggered: {

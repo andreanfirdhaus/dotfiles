@@ -39,6 +39,14 @@ Singleton {
     property bool wiredConnected: false
     property string connectivityState: "unknown"
 
+    function signalGlyph(s: real): string {
+        const level = Math.max(0, Math.min(1, s));
+        if (level >= 0.8) return "󰤨";
+        if (level >= 0.5) return "󰤥";
+        if (level >= 0.2) return "󰤢";
+        return "󰤟";
+    }
+
     Component.onCompleted: {
         nmcli.refresh();
     }
