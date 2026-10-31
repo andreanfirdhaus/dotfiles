@@ -2,7 +2,7 @@ hl.monitor({
 	output = "",
 	mode = "preferred",
 	position = "auto",
-	scale = "1.2",
+	scale = "1",
 })
 
 pcall(function()
@@ -32,36 +32,25 @@ hl.env("QS_ICON_THEME", "Adwaita")
 
 hl.config({
 	general = {
-		gaps_in = 2,
-		gaps_out = 4,
-
+		gaps_in = 3,
+		gaps_out = 5,
 		border_size = 1,
-
+		layout = "dwindle",
 		col = {
 			active_border = { colors = { "rgba(cdcdcdcc)", "rgba(606079cc)" }, angle = 45 },
 			inactive_border = "rgba(252530aa)",
 		},
-
-		resize_on_border = false,
-		allow_tearing = false,
-
-		layout = "dwindle",
 	},
-
 	decoration = {
 		rounding = 0,
-		rounding_power = 1.0,
-
 		active_opacity = 0.96,
 		inactive_opacity = 0.94,
-
 		shadow = {
 			enabled = true,
 			range = 6,
 			render_power = 2,
 			color = "0xee000000",
 		},
-
 		blur = {
 			enabled = true,
 			size = 6,
@@ -69,34 +58,23 @@ hl.config({
 			vibrancy = 0.0,
 		},
 	},
-
 	animations = {
 		enabled = true,
 	},
-
 	dwindle = {
 		preserve_split = true,
 	},
-
 	misc = {
 		force_default_wallpaper = 0,
 		disable_hyprland_logo = true,
 	},
-
 	input = {
 		kb_layout = "us",
-		kb_variant = "",
-		kb_model = "",
 		kb_options = "caps:escape",
-		kb_rules = "",
-
 		repeat_rate = 25,
 		repeat_delay = 300,
-
 		follow_mouse = 1,
-
 		sensitivity = 0,
-
 		touchpad = {
 			natural_scroll = true,
 			disable_while_typing = true,
@@ -105,15 +83,14 @@ hl.config({
 	},
 })
 
-hl.curve("smoothOut", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.05 } } })
-
-hl.animation({ leaf = "global", enabled = true, speed = 8, bezier = "smoothOut" })
-hl.animation({ leaf = "border", enabled = true, speed = 8, bezier = "smoothOut" })
-hl.animation({ leaf = "windows", enabled = true, speed = 5.5, bezier = "smoothOut", style = "slide" })
+hl.curve("funk", { type = "bezier", points = { { 0.60, 0.01 }, { 0.40, 1.00 } } })
 hl.animation({ leaf = "fade", enabled = false })
+hl.animation({ leaf = "border", enabled = false })
 hl.animation({ leaf = "layers", enabled = false })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smoothOut", style = "slide" })
-hl.animation({ leaf = "zoomFactor", enabled = true, speed = 6, bezier = "smoothOut" })
+hl.animation({ leaf = "windows", enabled = false })
+hl.animation({ leaf = "specialWorkspace", enabled = false })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 2, bezier = "funk" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 2, bezier = "funk", style = "slide" })
 
 hl.gesture({
 	fingers = 3,
@@ -127,6 +104,7 @@ local secondMod = "SUPER + SHIFT"
 hl.bind(mainMod .. " + A", hl.dsp.global("qs-bar:control"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
+hl.bind(secondMod .. " + Return", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + Space", hl.dsp.global("qs:launcher"))
 hl.bind("ALT + Space", hl.dsp.global("qs:launcher"))
 hl.bind(mainMod .. " + period", hl.dsp.global("qs:emoji"))
