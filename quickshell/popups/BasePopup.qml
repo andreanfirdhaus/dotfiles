@@ -87,8 +87,8 @@ PopupWindow {
     }
     Shortcut {
         sequence: "q"
-        enabled: base.visible && base.quitArmed()
-        onActivated: base.quitAction()
+        enabled: base.visible && base.escArmed()
+        onActivated: base.cancelOrClose()
     }
     anchor.window: bar
     readonly property var anchorWin: base.anchor.window ?? bar
