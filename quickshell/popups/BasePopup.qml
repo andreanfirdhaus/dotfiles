@@ -80,12 +80,6 @@ PopupWindow {
         if (view.currentIndex >= view.count)
             view.currentIndex = Math.max(0, view.count - 1);
     }
-    function selectInList(view, i: int): void {
-        if (!view)
-            return;
-        view.currentIndex = Services.Theme.clamp(i, 0, Math.max(0, view.count - 1));
-        view.positionViewAtIndex(view.currentIndex, ListView.Contain);
-    }
     Shortcut {
         sequence: "Escape"
         enabled: base.visible && base.escArmed()

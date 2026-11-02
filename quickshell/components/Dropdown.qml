@@ -12,7 +12,6 @@ Item {
     property int maxVisible: 6
     signal headerClicked()
     signal optionClicked(string value)
-    signal optionHovered(int index)
     width: parent.width
     height: Services.Theme.rowHeight
     function menuHeight(): int {
@@ -111,7 +110,6 @@ Item {
                 selected: isCursor
                 highlighted: isCurrent
                 baseColor: Services.Theme.surface
-                onHovered: root.optionHovered(index)
                 onClicked: root.optionClicked(modelData)
                 Text {
                     anchors {

@@ -9,7 +9,6 @@ SettingsRow {
     property bool openUp: false
     property int cursor: 0
     signal headerClicked()
-    signal optionHovered(int index)
     signal optionClicked(string value)
     value: ""
     Dropdown {
@@ -23,7 +22,6 @@ SettingsRow {
         cursor: root.cursor
         openUp: root.openUp
         onHeaderClicked: root.headerClicked()
-        onOptionHovered: index => root.optionHovered(index)
         onOptionClicked: value => root.optionClicked(value)
     }
 }

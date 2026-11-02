@@ -147,7 +147,6 @@ Column {
     DropdownRow {
         title: "Main display"
         selected: popup.tab === 2 && popup.selectedIndex === 0
-        onHovered: popup.hoverSelect(0)
         z: popup.openMainDrop ? 100 : 0
         options: popup.mainOptions()
         current: Services.Monitors.mainMonitor
@@ -158,7 +157,6 @@ Column {
             popup.selectedIndex = 0;
             popup.toggleMainDrop();
         }
-        onOptionHovered: index => popup.dropCursor = index
         onOptionClicked: value => {
             popup.selectedIndex = 0;
             Services.Monitors.setMainMonitor(value);
@@ -171,17 +169,17 @@ Column {
         width: parent.width
         height: popup.enabledCount > 1 ? root.previewAreaH : 0
         Rectangle {
+            id: previewBg
             anchors.fill: parent
-            color: popup.tab === 2 && popup.selectedIndex === 1 ? Services.Theme.activeBg : Services.Theme.transparent
+            readonly property bool selected: popup.tab === 2 && popup.selectedIndex === 1
+            readonly property bool hovered: previewMouse.containsMouse
+            color: selected ? Services.Theme.activeBg : hovered ? Services.Theme.hoverBg : Services.Theme.transparent
             border.width: 1
-            border.color: popup.tab === 2 && popup.selectedIndex === 1 ? Services.Theme.accent : Services.Theme.border
+            border.color: selected && hovered ? Services.Theme.fg : selected ? Services.Theme.accent : hovered ? Services.Theme.dim : Services.Theme.border
             MouseArea {
+                id: previewMouse
                 anchors.fill: parent
                 hoverEnabled: true
-                onContainsMouseChanged: {
-                    if (containsMouse)
-                        popup.hoverSelect(1);
-                }
             }
             Repeater {
                 model: root.previewMons
@@ -193,6 +191,7 @@ Column {
                     readonly property real bw: root.boxWFor(monName)
                     readonly property bool isFocused: modelData.focused === true
                     readonly property bool grabbed: popup.previewGrab && popup.previewGrabName === monName
+                    readonly property bool hovered: boxMouse.containsMouse
                     width: bw
                     height: root.previewSlotH
                     x: root.restingX(orderIdx < 0 ? 0 : orderIdx)
@@ -217,7 +216,7 @@ Column {
                             scale: boxSlot.grabbed ? 1.06 : 1
                             color: boxSlot.isFocused || boxSlot.grabbed ? Services.Theme.activeBg : Services.Theme.surface
                             border.width: 1
-                            border.color: boxSlot.grabbed ? Services.Theme.accent : boxSlot.isFocused ? Services.Theme.accent : Services.Theme.dim
+                            border.color: boxSlot.grabbed ? Services.Theme.accent : boxSlot.isFocused ? Services.Theme.accent : boxSlot.hovered ? Services.Theme.fg : Services.Theme.dim
                             Text {
                                 anchors.centerIn: parent
                                 text: boxSlot.monName.replace(/-.*$/, "")
@@ -247,10 +246,6 @@ Column {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.ArrowCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                popup.hoverSelect(1);
-                        }
                     }
                 }
             }
@@ -323,7 +318,6 @@ Column {
                     }
                     SettingsRow {
                         selected: popup.tab === 2 && popup.selectedIndex === popup.monFirst + index * popup.monRows + 0
-                        onHovered: popup.hoverSelect(popup.monFirst + index * popup.monRows + 0)
                         title: "Enabled"
                         value: monOn ? "On" : "Off"
                         SettingsSwitch {
@@ -338,7 +332,6 @@ Column {
                     SettingsSliderRow {
                         opacity: monOn ? 1 : 0.45
                         selected: popup.tab === 2 && popup.selectedIndex === popup.monFirst + index * popup.monRows + 1
-                        onHovered: popup.hoverSelect(popup.monFirst + index * popup.monRows + 1)
                         title: "Scale"
                         value: "x" + Services.Monitors.monitorScale(monName).toFixed(2).replace(/\.?0+$/, "")
                         sliderMinimum: 0.5
@@ -353,7 +346,6 @@ Column {
                         opacity: monOn ? 1 : 0.45
                         title: "Resolution"
                         selected: popup.tab === 2 && popup.selectedIndex === popup.monFirst + index * popup.monRows + 2
-                        onHovered: popup.hoverSelect(popup.monFirst + index * popup.monRows + 2)
                         z: popup.openMonRes === monName ? 100 : 0
                         options: Services.Monitors.monitorModes(monName)
                         current: Services.Monitors.monitorRes(monName)
@@ -364,7 +356,6 @@ Column {
                             popup.selectedIndex = popup.monFirst + index * popup.monRows + 2;
                             popup.toggleMonModeDrop(monName);
                         }
-                        onOptionHovered: optIdx => popup.dropCursor = optIdx
                         onOptionClicked: value => {
                             popup.selectedIndex = popup.monFirst + index * popup.monRows + 2;
                             popup.commitMonMode(monName, value);
@@ -378,7 +369,6 @@ Column {
         label: "Re-detect displays"
         columns: 1
         selected: popup.tab === 2 && popup.selectedIndex === popup.monLastIndex()
-        onHovered: popup.hoverSelect(popup.monLastIndex())
         onClicked: {
             popup.selectedIndex = popup.monLastIndex();
             root.syncPreviewOrder();

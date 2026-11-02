@@ -137,10 +137,6 @@ BasePopup {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse && Services.Notifs.history.length > 0)
-                                root.controlPanel.selectIndex(root.controlPanel.clearIdx());
-                        }
                         onClicked: {
                             root.controlPanel.actionIndex = -1;
                             Services.Notifs.clearHistory();
@@ -167,9 +163,12 @@ BasePopup {
                     required property int index
                     readonly property bool selected: root.controlPanel.selectedIndex === root.controlPanel.firstHistIdx() + index
                     readonly property string rawIcon: modelData.icon ?? ""
+                    readonly property bool isHovered: cardArea.containsMouse
                     width: historyList.width
                     height: content.height + 16
-                    color: selected ? Services.Theme.activeBg : cardArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.bg
+                    color: selected ? Services.Theme.activeBg : historyCard.isHovered ? Services.Theme.hoverBg : Services.Theme.bg
+                    border.width: selected ? 1 : 0
+                    border.color: historyCard.isHovered ? Services.Theme.fg : Services.Theme.accent
                     Rectangle {
                         anchors {
                             left: parent.left
@@ -185,10 +184,6 @@ BasePopup {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                root.controlPanel.selectIndex(root.controlPanel.firstHistIdx() + historyCard.index);
-                        }
                         onClicked: mouse => {
                             mouse.accepted = true;
                             const idx = historyCard.index;
@@ -269,7 +264,6 @@ BasePopup {
                                     width: parent.width
                                     actions: Services.Notifs.secondaryActionsOf(modelData.live?.actions ?? [])
                                     focusedIndex: historyCard.selected ? root.controlPanel.actionIndex : -1
-                                    onHovered: index => root.controlPanel.selectAction(historyCard.index, index)
                                     onPicked: action => {
                                         const idx = historyCard.index;
                                         try {

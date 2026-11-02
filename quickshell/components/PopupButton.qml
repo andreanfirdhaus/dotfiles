@@ -7,11 +7,13 @@ Rectangle {
     property bool accent: false
     property int columns: 2
     signal clicked
-    signal hovered
     width: (parent.width - (columns - 1) * Services.Theme.popupSpacing) / columns
     height: Services.Theme.rowHeight
     readonly property bool lit: root.accent || root.selected
-    color: root.lit ? Services.Theme.accent : hover.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
+    readonly property bool isHovered: hover.containsMouse
+    color: root.lit ? Services.Theme.accent : root.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+    border.width: root.lit && root.isHovered ? 1 : 0
+    border.color: Services.Theme.accentFg
     Text {
         anchors.centerIn: parent
         text: root.label
@@ -25,9 +27,5 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
-        onContainsMouseChanged: {
-            if (containsMouse)
-                root.hovered();
-        }
     }
 }

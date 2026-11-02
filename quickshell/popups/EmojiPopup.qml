@@ -245,21 +245,17 @@ BasePopup {
                 required property var modelData
                 required property int index
                 readonly property bool selected: resultGrid.currentIndex === index
+                readonly property bool hovered: cellArea.containsMouse
                 width: GridView.view.cellWidth
                 height: GridView.view.cellHeight
-                color: selected ? Services.Theme.accent : cellArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
+                color: selected ? Services.Theme.accent : hovered ? Services.Theme.hoverBg : Services.Theme.transparent
+                border.width: selected && hovered ? 1 : 0
+                border.color: Services.Theme.accentFg
                 MouseArea {
                     id: cellArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onContainsMouseChanged: {
-                        if (containsMouse) {
-                            resultGrid.currentIndex = index;
-                            resultGrid.positionViewAtIndex(index, GridView.Contain);
-                            filter.selMoved = true;
-                        }
-                    }
                     onClicked: {
                         resultGrid.currentIndex = index;
                         filter.selMoved = true;

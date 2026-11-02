@@ -11,10 +11,12 @@ Rectangle {
     property bool wide: false
     property int columns: 3
     signal clicked
-    signal hovered
     width: root.wide ? parent.width : (parent.width - 8) / columns
     height: Services.Theme.tileHeight
-    color: !root.available ? Services.Theme.transparent : root.accentButton ? Services.Theme.accent : root.selected ? Services.Theme.accent : root.active ? Services.Theme.activeBg : hover.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
+    readonly property bool isHovered: hover.containsMouse
+    color: !root.available ? Services.Theme.transparent : root.accentButton ? Services.Theme.accent : root.selected ? Services.Theme.accent : root.active ? Services.Theme.activeBg : root.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+    border.width: root.selected && root.isHovered ? 1 : 0
+    border.color: Services.Theme.accentFg
     opacity: root.available ? 1 : 0.45
     Column {
         anchors.centerIn: parent
@@ -41,9 +43,5 @@ Rectangle {
         hoverEnabled: true
         cursorShape: root.available ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
-        onContainsMouseChanged: {
-            if (containsMouse)
-                root.hovered();
-        }
     }
 }

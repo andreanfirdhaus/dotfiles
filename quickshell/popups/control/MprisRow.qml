@@ -7,14 +7,14 @@ Rectangle {
     visible: popup.mprisPlayer !== null
     width: parent.width
     height: visible ? Services.Theme.rowHeight : 0
-    color: popup.selectedKind() === "mpris" ? Services.Theme.activeBg : Services.Theme.surface
+    readonly property bool isHovered: rowHover.containsMouse
+    color: popup.selectedKind() === "mpris" ? Services.Theme.activeBg : root.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+    border.width: popup.selectedKind() === "mpris" ? 1 : 0
+    border.color: root.isHovered ? Services.Theme.fg : Services.Theme.accent
     MouseArea {
+        id: rowHover
         anchors.fill: parent
         hoverEnabled: true
-        onContainsMouseChanged: {
-            if (containsMouse)
-                popup.selectMpris(popup.mprisCol);
-        }
     }
     Item {
         id: artBox

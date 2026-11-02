@@ -213,7 +213,6 @@ DeviceListBase {
                     highlighted: row.busy || modelData.active
                     rowHeight: Services.Theme.listRowHeight
                     readonly property bool busy: modelData.ssid !== "" && modelData.ssid === Services.Nmcli.pendingSsid
-                    onHovered: root.selectRow(index)
                     onClicked: root.activateNetwork(modelData)
                     DeviceRow {
                         selected: row.selected
@@ -337,7 +336,6 @@ DeviceListBase {
                 noLabel: "Cancel"
                 yesLabel: "Connect"
                 accentYes: true
-                onHovered: index => root.selectedButton = index
                 onPicked: index => {
                     root.selectedButton = index;
                     if (index === 0)

@@ -7,17 +7,16 @@ Rectangle {
     property int titleWidth: 110
     property bool selected: false
     default property alias control: slot.data
-    signal hovered
     width: parent.width
     height: Services.Theme.rowHeight
-    color: root.selected ? Services.Theme.activeBg : Services.Theme.surface
+    readonly property bool isHovered: hoverArea.containsMouse
+    color: root.selected ? Services.Theme.activeBg : root.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+    border.width: root.selected ? 1 : 0
+    border.color: root.isHovered ? Services.Theme.fg : Services.Theme.accent
     MouseArea {
+        id: hoverArea
         anchors.fill: parent
         hoverEnabled: true
-        onContainsMouseChanged: {
-            if (containsMouse)
-                root.hovered();
-        }
     }
     Text {
         anchors {

@@ -24,7 +24,6 @@ Grid {
         active: Networking.wifiEnabled
         selected: popup.selectedIndex === popup.firstTileIdx() + 0
         onClicked: root.activateTile(0)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 0)
     }
     Tile {
         glyph: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
@@ -33,7 +32,6 @@ Grid {
         available: Bluetooth.defaultAdapter != null
         selected: popup.selectedIndex === popup.firstTileIdx() + 1
         onClicked: root.activateTile(1)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 1)
     }
     Tile {
         glyph: popup.micSource?.audio?.muted ? "󰍭" : "󰍬"
@@ -42,7 +40,6 @@ Grid {
         available: popup.micSource?.audio != null
         selected: popup.selectedIndex === popup.firstTileIdx() + 2
         onClicked: root.activateTile(2)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 2)
     }
     Tile {
         glyph: "󰅶"
@@ -50,7 +47,6 @@ Grid {
         active: Services.Modes.caffeineActive
         selected: popup.selectedIndex === popup.firstTileIdx() + 3
         onClicked: root.activateTile(3)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 3)
     }
     Tile {
         glyph: ""
@@ -58,7 +54,6 @@ Grid {
         active: Services.Modes.dndActive
         selected: popup.selectedIndex === popup.firstTileIdx() + 4
         onClicked: root.activateTile(4)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 4)
     }
     Tile {
         glyph: "󰖔"
@@ -66,7 +61,6 @@ Grid {
         active: Services.Modes.bluelightActive
         selected: popup.selectedIndex === popup.firstTileIdx() + 5
         onClicked: root.activateTile(5)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 5)
     }
     Tile {
         glyph: "󰓅"
@@ -75,7 +69,6 @@ Grid {
         available: Services.Asus.available || Services.Power.profilesAvailable
         selected: popup.selectedIndex === popup.firstTileIdx() + 6
         onClicked: root.activateTile(6)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 6)
     }
     Tile {
         glyph: ""
@@ -83,7 +76,6 @@ Grid {
         active: false
         selected: popup.selectedIndex === popup.firstTileIdx() + 7
         onClicked: root.activateTile(7)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 7)
     }
     Tile {
         glyph: "󰐥"
@@ -91,6 +83,5 @@ Grid {
         active: false
         selected: popup.selectedIndex === popup.firstTileIdx() + 8
         onClicked: root.activateTile(8)
-        onHovered: popup.selectIndex(popup.firstTileIdx() + 8)
     }
 }

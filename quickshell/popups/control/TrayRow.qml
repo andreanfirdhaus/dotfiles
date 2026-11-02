@@ -30,7 +30,10 @@ Rectangle {
 
     visible: entryCount > 0
     width: parent.width
-    color: popup.selectedKind() === "tray" ? Services.Theme.activeBg : Services.Theme.surface
+    readonly property bool collapsedHover: trayArea.containsMouse
+    color: popup.selectedKind() === "tray" ? Services.Theme.activeBg : root.collapsedHover ? Services.Theme.hoverBg : Services.Theme.surface
+    border.width: popup.selectedKind() === "tray" ? 1 : 0
+    border.color: root.collapsedHover ? Services.Theme.fg : Services.Theme.accent
     height: visible && popup.visible ? (expanded ? Math.max(Services.Theme.rowHeight, shellCol.implicitHeight) : Services.Theme.rowHeight) : 0
     clip: true
 
@@ -221,18 +224,13 @@ Rectangle {
     }
 
     MouseArea {
+        id: trayArea
         anchors.fill: parent
         visible: !root.expanded
         enabled: visible && root.popup.visible
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-
-        onContainsMouseChanged: {
-            if (containsMouse)
-                root.popup.selectTray();
-        }
-
         onClicked: root.expand()
     }
 
@@ -348,6 +346,7 @@ Rectangle {
                 readonly property bool isSeparator: entryRow.modelData?.isSeparator ?? false
                 readonly property bool isSelected: root.expanded && index === root.selection && !isSeparator
                 readonly property bool isDisabled: root.inMenu && entryRow.modelData?.enabled === false
+                readonly property bool isHovered: entryArea.containsMouse && !isSeparator
 
                 onIsSelectedChanged: {
                     if (isSelected && root.popup.visible)
@@ -367,9 +366,10 @@ Rectangle {
                 Rectangle {
                     visible: !entryRow.isSeparator
                     anchors.fill: parent
-                    color: entryRow.isSelected ? Services.Theme.accent : "transparent"
+                    color: entryRow.isSelected ? Services.Theme.accent : entryRow.isHovered ? Services.Theme.hoverBg : "transparent"
 
                     MouseArea {
+                        id: entryArea
                         anchors.fill: parent
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         hoverEnabled: true
@@ -377,9 +377,8 @@ Rectangle {
                         enabled: !entryRow.isDisabled && root.popup.visible
 
                         onContainsMouseChanged: {
-                            if (containsMouse && root.selectable(entryRow.modelData)) {
+                            if (containsMouse && root.selectable(entryRow.modelData))
                                 root.selection = entryRow.index;
-                            }
                         }
 
                         onClicked: mouse => {

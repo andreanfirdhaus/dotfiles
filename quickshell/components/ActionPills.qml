@@ -5,7 +5,6 @@ Flow {
     id: root
     property var actions: []
     property int focusedIndex: -1
-    signal hovered(int index)
     signal picked(var action)
     visible: (root.actions ?? []).length > 0
     spacing: 6
@@ -17,7 +16,10 @@ Flow {
             readonly property bool focused: index === root.focusedIndex
             width: actionLabel.width + 16
             height: 24
-            color: focused ? Services.Theme.accent : actionArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
+            readonly property bool isHovered: actionArea.containsMouse
+            color: focused ? Services.Theme.accent : isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+            border.width: focused && isHovered ? 1 : 0
+            border.color: Services.Theme.accentFg
             Text {
                 id: actionLabel
                 anchors.centerIn: parent
@@ -31,10 +33,6 @@ Flow {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: {
-                    if (containsMouse)
-                        root.hovered(index);
-                }
                 onClicked: mouse => {
                     mouse.accepted = true;
                     root.picked(modelData);

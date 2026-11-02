@@ -373,11 +373,6 @@ BasePopup {
                 required property int index
                 rowHeight: modelData.isImage ? 80 : Services.Theme.rowHeight
                 selected: clipList.currentIndex === index
-                onHovered: {
-                    root.wipeConfirm = false;
-                    clipList.currentIndex = index;
-                    clipList.positionViewAtIndex(index, ListView.Contain);
-                }
                 onClicked: {
                     clipList.currentIndex = index;
                     root.pasteSelected();
@@ -477,7 +472,6 @@ BasePopup {
                 choice: root.wipeChoice
                 noLabel: "No"
                 yesLabel: "Yes"
-                onHovered: index => root.wipeChoice = index
                 onPicked: index => {
                     root.wipeChoice = index;
                     root.confirmWipe();

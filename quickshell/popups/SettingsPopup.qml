@@ -69,13 +69,6 @@ BasePopup {
     property string previewBaseAxis: "row"
     property bool wallFocus: false
     property int wallCursor: 0
-    function hoverSelect(i: int): void {
-        if (!root.anyDropOpen() && !root.previewGrab) {
-            if (root.wallFocus && !(root.tab === 0 && i === 0))
-                root.wallFocus = false;
-            root.selectedIndex = i;
-        }
-    }
     function ensureWallCursor(): void {
         if (root.wpCount <= 0) {
             root.wallCursor = 0;

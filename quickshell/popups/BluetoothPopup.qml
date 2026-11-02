@@ -246,7 +246,6 @@ DeviceListBase {
                     highlighted: row.connected
                     rowHeight: Services.Theme.listRowHeight
                     readonly property bool connected: modelData.connected || modelData.state === BluetoothDeviceState.Connected
-                    onHovered: root.selectRow(index)
                     onClicked: root.activateDevice(modelData)
                     DeviceRow {
                         selected: row.selected

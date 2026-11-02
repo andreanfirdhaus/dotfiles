@@ -174,14 +174,17 @@ Rectangle {
                     required property var modelData
                     readonly property bool isTodayCell: modelData > 0 && root.isToday(modelData)
                     readonly property bool isSelectedCell: modelData > 0 && modelData === root.selectedDay && root.focused
-                    readonly property bool showDay: root.focused || isTodayCell || isSelectedCell
+                    readonly property bool isHovered: dayArea.containsMouse && modelData > 0
+                    readonly property bool showDay: root.focused || isTodayCell || isSelectedCell || isHovered
                     width: parent.width / 7
                     height: 26
-                    color: showDay ? (isSelectedCell ? Services.Theme.accent : isTodayCell ? Services.Theme.activeBg : Services.Theme.bg) : Services.Theme.transparent
+                    color: showDay ? (isSelectedCell ? Services.Theme.accent : isTodayCell ? Services.Theme.activeBg : isHovered ? Services.Theme.hoverBg : Services.Theme.bg) : Services.Theme.transparent
+                    border.width: isSelectedCell && isHovered ? 1 : 0
+                    border.color: Services.Theme.accentFg
                     Text {
                         anchors.centerIn: parent
                         text: modelData === 0 ? "" : modelData
-                        color: parent.isSelectedCell ? Services.Theme.accentFg : parent.isTodayCell ? Services.Theme.fg : Services.Theme.dim
+                        color: parent.isSelectedCell ? Services.Theme.accentFg : parent.isTodayCell || parent.isHovered ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                     }
@@ -194,15 +197,11 @@ Rectangle {
                     Keys.onDownPressed: root.moveSelection(1)
                     Keys.onEscapePressed: root.popup?.handleEscape()
                     MouseArea {
+                        id: dayArea
                         anchors.fill: parent
                         enabled: parent.modelData > 0
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: {
-                            root.selectedDay = parent.modelData;
-                            if (root.popup)
-                                root.popup.selectIndex(root.popup.firstCalIdx());
-                        }
                         onClicked: root.openCalendar(parent.modelData)
                     }
                 }

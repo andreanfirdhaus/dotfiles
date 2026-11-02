@@ -340,11 +340,6 @@ BasePopup {
                 required property var modelData
                 required property int index
                 selected: resultList.currentIndex === index
-                onHovered: {
-                    resultList.currentIndex = index;
-                    resultList.positionViewAtIndex(index, ListView.Contain);
-                    filter.selMoved = true;
-                }
                 onClicked: {
                     resultList.currentIndex = index;
                     filter.selMoved = true;

@@ -21,18 +21,17 @@ Text {
         anchors.centerIn: parent
         width: root.btnWidth === 20 ? 24 : root.btnWidth
         height: 24
-        visible: root.highlighted
-        color: Services.Theme.accent
+        visible: root.highlighted || btnArea.containsMouse
+        color: root.highlighted ? Services.Theme.accent : Services.Theme.hoverBg
+        border.width: root.highlighted && btnArea.containsMouse ? 1 : 0
+        border.color: Services.Theme.accentFg
         z: -1
     }
     MouseArea {
+        id: btnArea
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onContainsMouseChanged: {
-            if (containsMouse)
-                root.popup.selectMpris(root.col);
-        }
         onClicked: root.popup.activateMpris(root.col)
     }
 }

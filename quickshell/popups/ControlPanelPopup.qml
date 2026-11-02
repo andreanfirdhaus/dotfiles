@@ -15,10 +15,9 @@ BasePopup {
     PanelNavKeys {
         host: root
         panel: root
-        navActive: !(bar.bodyPanel?.visible ?? false)
     }
-    Shortcut { sequence: "["; enabled: root.visible && !(bar.bodyPanel?.visible ?? false); onActivated: root.stepSection(-1) }
-    Shortcut { sequence: "]"; enabled: root.visible && !(bar.bodyPanel?.visible ?? false); onActivated: root.stepSection(1) }
+    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.stepSection(-1) }
+    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.stepSection(1) }
     onVisibleChanged: {
         if (visible) {
             selectedIndex = 0;
@@ -120,10 +119,10 @@ BasePopup {
         root.handleEscape();
     }
     function escArmed(): bool {
-        return !(bar.bodyPanel?.visible ?? false);
+        return true;
     }
     function quitArmed(): bool {
-        return !(bar.bodyPanel?.visible ?? false);
+        return true;
     }
     function itemCount(): int {
         const last = root.sections[root.sections.length - 1];
@@ -161,16 +160,6 @@ BasePopup {
         actionIndex = actIdx;
         root.clampSelection();
         root.revealSelection();
-    }
-    function selectMpris(col: int): void {
-        if (root.mprisPlayer === null)
-            return;
-        if (selectedIndex === root.mprisIdx() && mprisCol === col)
-            return;
-        selectedIndex = root.mprisIdx();
-        actionIndex = -1;
-        mprisCol = Services.Theme.clamp(col, 0, root.mprisMaxCol());
-        root.clampSelection();
     }
     function selectTray(): void {
         if (trayRow.visible)

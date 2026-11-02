@@ -16,14 +16,14 @@ Rectangle {
 
     width: parent.width
     height: Services.Theme.rowHeight
-    color: popup.selectedIndex === root.rowIndex ? Services.Theme.activeBg : Services.Theme.surface
+    readonly property bool isHovered: rowHover.containsMouse
+    color: popup.selectedIndex === root.rowIndex ? Services.Theme.activeBg : root.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+    border.width: popup.selectedIndex === root.rowIndex ? 1 : 0
+    border.color: root.isHovered ? Services.Theme.fg : Services.Theme.accent
     MouseArea {
+        id: rowHover
         anchors.fill: parent
         hoverEnabled: true
-        onContainsMouseChanged: {
-            if (containsMouse)
-                popup.selectIndex(root.rowIndex);
-        }
     }
     Row {
         anchors {

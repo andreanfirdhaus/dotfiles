@@ -7,7 +7,6 @@ Row {
     required property string yesLabel
     property bool accentYes: false
     signal picked(int index)
-    signal hovered(int index)
     width: parent.width
     spacing: Services.Theme.popupSpacing
     PopupButton {
@@ -15,7 +14,6 @@ Row {
         columns: 2
         selected: root.choice === 0
         onClicked: root.picked(0)
-        onHovered: root.hovered(0)
     }
     PopupButton {
         label: root.yesLabel
@@ -23,6 +21,5 @@ Row {
         accent: root.accentYes
         selected: root.choice === 1
         onClicked: root.picked(1)
-        onHovered: root.hovered(1)
     }
 }

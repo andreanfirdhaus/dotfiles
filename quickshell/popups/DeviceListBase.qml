@@ -6,9 +6,6 @@ BasePopup {
     function stepSelection(dir: int): void {
         stepListView(targetList, dir);
     }
-    function selectRow(i: int): void {
-        selectInList(targetList, i);
-    }
     function activateRow(): void {
     }
     function forgetRow(): void {

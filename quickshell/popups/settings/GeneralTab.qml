@@ -49,12 +49,15 @@ Column {
                     required property int index
                     readonly property bool current: modelData === Services.Settings.wallpaperOverride
                     readonly property bool selected: popup.wallFocus && wallList.currentIndex === index
+                    readonly property bool hovered: thumbHover.containsMouse
                     width: GridView.view.cellWidth
                     height: GridView.view.cellHeight
                     Rectangle {
                         anchors.fill: parent
                         anchors.margins: 2
-                        color: cell.selected || thumbHover.containsMouse ? Services.Theme.activeBg : Services.Theme.surface
+                        color: cell.selected ? Services.Theme.activeBg : cell.hovered ? Services.Theme.hoverBg : Services.Theme.surface
+                        border.width: cell.selected ? 1 : 0
+                        border.color: cell.hovered ? Services.Theme.fg : Services.Theme.accent
                         clip: true
                         Image {
                             anchors {
@@ -89,7 +92,7 @@ Column {
                             verticalAlignment: Text.AlignVCenter
                             horizontalAlignment: Text.AlignHCenter
                             text: (cell.current ? "✓ " : "") + String(cell.modelData).split("/").pop()
-                            color: cell.selected ? Services.Theme.fg : cell.current ? Services.Theme.accent : thumbHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                            color: cell.selected ? Services.Theme.fg : cell.current ? Services.Theme.accent : cell.hovered ? Services.Theme.fg : Services.Theme.dim
                             font.family: Services.Theme.font
                             font.pixelSize: Services.Theme.px10
                             elide: Text.ElideRight
@@ -99,13 +102,6 @@ Column {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onContainsMouseChanged: {
-                                if (containsMouse) {
-                                    wallList.currentIndex = cell.index;
-                                    popup.wallCursor = cell.index;
-                                    popup.hoverSelect(0);
-                                }
-                            }
                             onClicked: {
                                 wallList.currentIndex = cell.index;
                                 popup.wallCursor = cell.index;
@@ -156,7 +152,6 @@ Column {
             title: "Sensitivity"
             value: Services.Settings.sensitivity.toFixed(1)
             selected: popup.tab === 0 && popup.selectedIndex === popup.wpInputBase + 0
-            onHovered: popup.hoverSelect(popup.wpInputBase + 0)
             sliderMinimum: -1
             sliderMaximum: 1
             sliderValue: Services.Settings.sensitivity
@@ -166,7 +161,6 @@ Column {
             title: "Touchpad scroll"
             value: Services.Settings.touchScroll.toFixed(1)
             selected: popup.tab === 0 && popup.selectedIndex === popup.wpInputBase + 1
-            onHovered: popup.hoverSelect(popup.wpInputBase + 1)
             sliderMinimum: 0.1
             sliderMaximum: 2
             sliderValue: Services.Settings.touchScroll
@@ -176,7 +170,6 @@ Column {
             title: "Natural scroll"
             value: Services.Settings.naturalScroll ? "On" : "Off"
             selected: popup.tab === 0 && popup.selectedIndex === popup.wpInputBase + 2
-            onHovered: popup.hoverSelect(popup.wpInputBase + 2)
             SettingsSwitch {
                 on: Services.Settings.naturalScroll
                 onToggled: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll)
