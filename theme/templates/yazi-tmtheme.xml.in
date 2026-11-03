@@ -18,25 +18,25 @@
         <key>settings</key>
         <dict>
           <key>background</key>
-          <string>#141415</string>
+          <string>@UI_BG@</string>
           <key>foreground</key>
-          <string>#cdcdcd</string>
+          <string>@UI_FG@</string>
           <key>caret</key>
-          <string>#bb9dbd</string>
+          <string>@SYN_PARAMETER@</string>
           <key>lineHighlight</key>
-          <string>#252530</string>
+          <string>@UI_OVERLAY@</string>
           <key>misspelling</key>
-          <string>#d8647e</string>
+          <string>@UI_RED@</string>
           <key>accent</key>
-          <string>#bb9dbd</string>
+          <string>@SYN_PARAMETER@</string>
           <key>selection</key>
-          <string>#333738</string>
+          <string>@SYN_VISUAL@</string>
           <key>activeGuide</key>
-          <string>#1c1c24</string>
+          <string>@UI_SURFACE@</string>
           <key>findHighlight</key>
-          <string>#405065</string>
+          <string>@SYN_SEARCH@</string>
           <key>gutterForeground</key>
-          <string>#606079</string>
+          <string>@SYN_COMMENT@</string>
         </dict>
       </dict>
       <dict>
@@ -47,7 +47,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#cdcdcd</string>
+          <string>@UI_FG@</string>
         </dict>
       </dict>
       <dict>
@@ -58,7 +58,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#90a0b5</string>
+          <string>@SYN_OPERATOR@</string>
           <key>fontStyle</key>
           <string/>
         </dict>
@@ -71,7 +71,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#606079</string>
+          <string>@SYN_COMMENT@</string>
           <key>fontStyle</key>
           <string>italic</string>
         </dict>
@@ -82,7 +82,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#e8b589</string>
+          <string>@SYN_STRING@</string>
         </dict>
       </dict>
       <dict>
@@ -91,7 +91,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#aeaed1</string>
+          <string>@UI_ACCENT@</string>
         </dict>
       </dict>
       <dict>
@@ -102,7 +102,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#e0a363</string>
+          <string>@SYN_NUMBER@</string>
         </dict>
       </dict>
       <dict>
@@ -111,7 +111,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#bb9dbd</string>
+          <string>@SYN_PARAMETER@</string>
           <key>fontStyle</key>
           <string/>
         </dict>
@@ -124,7 +124,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#c48282</string>
+          <string>@SYN_FUNCTION@</string>
           <key>fontStyle</key>
           <string>italic</string>
         </dict>
@@ -137,7 +137,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#9bb4bc</string>
+          <string>@SYN_TYPE@</string>
           <key>fontStyle</key>
           <string>italic</string>
         </dict>
@@ -150,7 +150,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#9bb4bc</string>
+          <string>@SYN_TYPE@</string>
           <key>fontStyle</key>
           <string>italic</string>
         </dict>
@@ -163,7 +163,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#c3c3d5</string>
+          <string>@SYN_PROPERTY@</string>
         </dict>
       </dict>
       <dict>
@@ -174,7 +174,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#9bb4bc</string>
+          <string>@SYN_TYPE@</string>
           <key>fontStyle</key>
           <string>italic</string>
         </dict>
@@ -185,7 +185,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#bb9dbd</string>
+          <string>@SYN_PARAMETER@</string>
           <key>fontStyle</key>
           <string>italic</string>
         </dict>

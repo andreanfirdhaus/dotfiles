@@ -56,7 +56,7 @@ usage() {
     printf '  -n, --dry-run    print actions without changing anything\n'
     printf '  --verify         check links only, exit non-zero on mismatch\n'
     printf '  --backup         move unmanaged files aside instead of skipping\n'
-    printf '  --no-plugins     skip mise install, bat cache rebuild and hypr reload\n'
+    printf '  --no-plugins     skip mise install and theme reload hooks\n'
     printf '  -y, --yes        never prompt\n'
     printf '  -C, --category CAT  only this category (repeatable)\n'
     printf 'categories:\n'
@@ -277,9 +277,13 @@ if [ "$NO_PLUGINS" -eq 0 ]; then
         mise trust "$REPO/mise/config.toml" >/dev/null 2>&1 && log "trusted mise config" || warn "mise trust failed"
         mise install || warn "mise install failed"
     fi
-    command -v bat >/dev/null 2>&1 && { bat cache --build >/dev/null 2>&1 && log "rebuilt bat cache"; }
-    if command -v hyprctl >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
-        hyprctl reload >/dev/null 2>&1 && log "reloaded Hyprland"
+fi
+
+if [ -x "$REPO/bin/theme" ]; then
+    if [ "$NO_PLUGINS" -eq 0 ]; then
+        "$REPO/bin/theme" apply >/dev/null 2>&1 && log "applied theme" || warn "theme apply failed"
+    else
+        "$REPO/bin/theme" apply --no-hooks >/dev/null 2>&1 && log "applied theme" || warn "theme apply failed"
     fi
 fi
 

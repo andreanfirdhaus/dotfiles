@@ -11,3 +11,12 @@ node_modules/
 
 # hypr config
 hypr/qs-monitors.lua
+
+# generated theme artifacts
+foot/theme.ini
+btop/themes/theme.theme
+bat/themes/theme.tmTheme
+yazi/flavors/theme.yazi/
+hypr/theme.lua
+nvim/theme.json
+lazygit/config.yml

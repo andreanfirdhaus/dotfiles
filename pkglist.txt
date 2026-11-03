@@ -32,3 +32,4 @@ ripgrep
 zoxide
 systemd
 power-profiles-daemon
+matugen

@@ -1,25 +1,109 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     id: root
 
-    property string barBg: "#D9141415"
-    property string bg: "#141415"
-    property string surface: "#1c1c24"
-    property string hoverBg: "#252530"
-    property string activeBg: "#252530"
-    property string border: "#26CDCDCD"
-    property string fg: "#cdcdcd"
-    property string dim: "#878787"
-    property string accent: "#aeaed1"
-    property string accentFg: "#141415"
-    property string white: "#ffffff"
+    readonly property string paletteFile: {
+        const state = Quickshell.env("XDG_STATE_HOME") ?? "";
+        const home = Quickshell.env("HOME") ?? "";
+        if (state !== "")
+            return state + "/quickshell/palette.json";
+        if (home !== "")
+            return home + "/.local/state/quickshell/palette.json";
+        return "";
+    }
+    property var palette: ({})
+    property bool paletteReady: false
+    function pick(group, key, fallback) {
+        const g = root.palette ? root.palette[group] : null;
+        if (g && typeof g[key] === "string" && g[key] !== "")
+            return g[key];
+        return fallback;
+    }
+    function loadPalette(text) {
+        if (typeof text !== "string" || text.trim() === "")
+            return;
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed === "object") {
+                root.palette = parsed;
+                root.paletteReady = true;
+            }
+        } catch (e) {
+            console.warn("quickshell: palette.json parse failed: " + e);
+        }
+    }
+
+    property string barBg: "#d9" + root.bg.slice(1)
+    property string bg: root.pick("ui", "bg", "#141415")
+    property string surface: root.pick("ui", "surface", "#1c1c24")
+    property string hoverBg: root.pick("ui", "overlay", "#252530")
+    property string activeBg: root.pick("ui", "overlay", "#252530")
+    property string border: "#26" + root.fg.slice(1)
+    property string fg: root.pick("ui", "fg", "#cdcdcd")
+    property string dim: root.pick("ui", "dim", "#878787")
+    property string accent: root.pick("ui", "accent", "#aeaed1")
+    property string accentFg: root.pick("ui", "accentFg", "#141415")
+    property string white: root.pick("ui", "bright", "#ffffff")
     property string transparent: "transparent"
-    property string warn: "#f3be7c"
-    property string danger: "#d8647e"
+    property string warn: root.pick("ui", "yellow", "#f3be7c")
+    property string danger: root.pick("ui", "red", "#d8647e")
     property string font: "JetBrainsMono Nerd Font Propo"
+
+    readonly property string activeScheme: root.palette.active ?? "vague"
+    readonly property string activeLabel: root.palette.label ?? "Vague"
+    readonly property var schemes: root.palette.schemes ?? []
+    readonly property var schemeLabels: root.schemes.map(s => s.label)
+    readonly property var swatches: [
+        root.pick("ui", "accent", "#aeaed1"),
+        root.pick("ui", "red", "#d8647e"),
+        root.pick("ui", "yellow", "#f3be7c"),
+        root.pick("ui", "green", "#7fa563"),
+        root.pick("ui", "blue", "#6e94b2"),
+        root.pick("ui", "purple", "#bb9dbd")
+    ]
+    function schemeIdFor(label) {
+        const hit = root.schemes.find(s => s.label === label);
+        return hit ? hit.id : "";
+    }
+    function applyScheme(id) {
+        if (typeof id !== "string" || id === "" || root.applying)
+            return;
+        runTheme(["set", id]);
+    }
+    function wallpaperChanged(path) {
+        if (root.activeScheme !== "wallpaper" || root.applying)
+            return;
+        if (typeof path === "string" && path !== "")
+            runTheme(["set", "wallpaper", "--image", path]);
+    }
+    property bool applying: false
+    function runTheme(args) {
+        root.applying = true;
+        themeProc.command = ["sh", "-c", 'for c in "$HOME/.local/bin/theme" "$HOME/dotfiles/bin/theme"; do [ -x "$c" ] && exec "$c" "$@"; done; exit 99', "theme"].concat(args);
+        themeProc.running = true;
+    }
+
+    FileView {
+        id: paletteView
+        path: root.paletteFile
+        watchChanges: true
+        onFileChanged: this.reload()
+        onTextChanged: root.loadPalette(this.text())
+        onLoaded: root.loadPalette(this.text())
+    }
+    Process {
+        id: themeProc
+        onExited: exitCode => {
+            root.applying = false;
+            if (exitCode !== 0) {
+                Notifs.notify({app: "settings", summary: "Theme switch failed", body: "Run `theme set <preset>` in a terminal.", syncId: "theme", timeout: 8000});
+            }
+        }
+    }
 
     property int px10: 10
     property int px11: 11
