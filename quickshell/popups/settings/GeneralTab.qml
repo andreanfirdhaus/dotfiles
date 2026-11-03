@@ -14,8 +14,61 @@ Column {
         width: parent.width
         height: popup.sectionH
         verticalAlignment: Text.AlignVCenter
-        text: Services.Settings.wallpapers.length > 0 ? "Wallpaper  ·  " + Services.Settings.wallpapers.length : "Wallpaper"
+        text: "Appearance"
         color: popup.tab === 0 && popup.selectedIndex === 0 ? Services.Theme.fg : Services.Theme.dim
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px11
+    }
+    DropdownRow {
+        selected: popup.tab === 0 && popup.selectedIndex === 0
+        title: "Palette"
+        z: popup.paletteDropOpen ? 100 : 0
+        options: popup.paletteOptions()
+        current: Services.Theme.activeLabel
+        dropOpen: popup.paletteDropOpen
+        cursor: popup.dropCursor
+        onHeaderClicked: {
+            popup.selectedIndex = 0;
+            popup.togglePaletteDrop();
+        }
+        onOptionClicked: value => {
+            popup.selectedIndex = 0;
+            popup.applyPalette(value);
+            popup.closeDrop();
+        }
+    }
+    Row {
+        width: parent.width
+        height: popup.swatchH
+        spacing: Services.Theme.listSpacing
+        Repeater {
+            model: Services.Theme.swatches
+            delegate: Rectangle {
+                required property var modelData
+                width: Math.max(1, Math.floor((parent.width - (Services.Theme.swatches.length - 1) * Services.Theme.listSpacing) / Services.Theme.swatches.length))
+                height: popup.swatchH
+                color: modelData
+                border.width: 1
+                border.color: Services.Theme.border
+            }
+        }
+    }
+    Text {
+        width: parent.width
+        height: popup.themeHintH
+        verticalAlignment: Text.AlignVCenter
+        text: "btop · yazi · lazygit apply on next launch"
+        color: Services.Theme.dim
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px10
+        elide: Text.ElideRight
+    }
+    Text {
+        width: parent.width
+        height: popup.sectionH
+        verticalAlignment: Text.AlignVCenter
+        text: Services.Settings.wallpapers.length > 0 ? "Wallpaper  ·  " + Services.Settings.wallpapers.length : "Wallpaper"
+        color: popup.tab === 0 && popup.selectedIndex === popup.themeBase ? Services.Theme.fg : Services.Theme.dim
         font.family: Services.Theme.font
         font.pixelSize: Services.Theme.px11
     }
@@ -30,7 +83,7 @@ Column {
                 anchors.fill: parent
                 color: Services.Theme.transparent
                 border.width: 1
-                border.color: popup.tab === 0 && popup.selectedIndex === 0 ? Services.Theme.accent : Services.Theme.border
+                border.color: popup.tab === 0 && popup.selectedIndex === popup.themeBase ? Services.Theme.accent : Services.Theme.border
             }
             GridView {
                 id: wallList
@@ -105,7 +158,7 @@ Column {
                             onClicked: {
                                 wallList.currentIndex = cell.index;
                                 popup.wallCursor = cell.index;
-                                popup.selectedIndex = 0;
+                                popup.selectedIndex = popup.themeBase;
                                 popup.wallFocus = false;
                                 Services.Settings.setWallpaper(cell.modelData);
                             }
@@ -134,64 +187,6 @@ Column {
             color: Services.Theme.dim
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px10
-        }
-    }
-    Text {
-        width: parent.width
-        height: popup.sectionH
-        verticalAlignment: Text.AlignVCenter
-        text: "Appearance"
-        color: popup.tab === 0 && popup.selectedIndex === popup.themeBase ? Services.Theme.fg : Services.Theme.dim
-        font.family: Services.Theme.font
-        font.pixelSize: Services.Theme.px11
-    }
-    Column {
-        width: parent.width
-        spacing: Services.Theme.listSpacing
-        z: popup.paletteDropOpen ? 100 : 0
-        DropdownRow {
-            selected: popup.tab === 0 && popup.selectedIndex === popup.themeBase
-            title: "Palette"
-            z: popup.paletteDropOpen ? 100 : 0
-            options: popup.paletteOptions()
-            current: Services.Theme.activeLabel
-            dropOpen: popup.paletteDropOpen
-            cursor: popup.dropCursor
-            onHeaderClicked: {
-                popup.selectedIndex = popup.themeBase;
-                popup.togglePaletteDrop();
-            }
-            onOptionClicked: value => {
-                popup.selectedIndex = popup.themeBase;
-                popup.applyPalette(value);
-                popup.closeDrop();
-            }
-        }
-        Row {
-            width: parent.width
-            height: popup.swatchH
-            spacing: Services.Theme.listSpacing
-            Repeater {
-                model: Services.Theme.swatches
-                delegate: Rectangle {
-                    required property var modelData
-                    width: Math.max(1, Math.floor((parent.width - (Services.Theme.swatches.length - 1) * Services.Theme.listSpacing) / Services.Theme.swatches.length))
-                    height: popup.swatchH
-                    color: modelData
-                    border.width: 1
-                    border.color: Services.Theme.border
-                }
-            }
-        }
-        Text {
-            width: parent.width
-            height: popup.themeHintH
-            verticalAlignment: Text.AlignVCenter
-            text: "btop · yazi · lazygit apply on next launch"
-            color: Services.Theme.dim
-            font.family: Services.Theme.font
-            font.pixelSize: Services.Theme.px10
-            elide: Text.ElideRight
         }
     }
     Text {

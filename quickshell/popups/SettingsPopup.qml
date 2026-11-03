@@ -205,7 +205,7 @@ BasePopup {
     function syncWallCursor(): void {
         root.ensureWallCursor();
         root.clampSelection();
-        if (root.tab === 0 && root.wpCount > 0 && selectedIndex === 0) {
+        if (root.tab === 0 && root.wpCount > 0 && selectedIndex === root.themeBase) {
             generalTab.wallList.currentIndex = root.wallCursor;
             generalTab.wallList.positionViewAtIndex(root.wallCursor, GridView.Contain);
         } else {
@@ -234,8 +234,8 @@ BasePopup {
             root.moveCursor(Services.Monitors.monitorModes(root.openMonRes), dir);
             return;
         }
-        if (root.tab === 0 && root.wpCount > 0) {
-            if (root.wallFocus && selectedIndex === 0) {
+        if (root.tab === 0) {
+            if (root.wpCount > 0 && selectedIndex === root.themeBase && root.wallFocus) {
                 let nxt = root.wallCursor + dir * root.wpCols;
                 if (nxt < 0)
                     nxt = 0;
@@ -250,16 +250,14 @@ BasePopup {
             root.syncWallCursor();
             return;
         }
-        selectedIndex += dir;
-        root.clampSelection();
-        root.syncWallCursor();
     }
     function sectionBounds(): var {
         if (root.tab === 0) {
             const bounds = [];
+            bounds.push(0);
             if (root.wpCount > 0)
-                bounds.push(0);
-            bounds.push(root.themeBase, root.inputBase);
+                bounds.push(root.themeBase);
+            bounds.push(root.inputBase);
             return bounds;
         }
         if (root.tab === 1)
@@ -315,14 +313,7 @@ BasePopup {
     }
     function adjustSelected(dir: int): void {
         if (root.tab === 0) {
-            if (root.wpCount > 0 && selectedIndex === 0) {
-                if (root.wallFocus) {
-                    root.wallCursor = Services.Theme.clamp(root.wallCursor + dir, 0, root.wpCount - 1);
-                    root.syncWallCursor();
-                }
-                return;
-            }
-            if (selectedIndex === root.themeBase) {
+            if (selectedIndex === 0) {
                 if (root.paletteDropOpen) {
                     if (dir < 0)
                         root.closeDrop();
@@ -331,6 +322,13 @@ BasePopup {
                     return;
                 }
                 root.cyclePalette(dir);
+                return;
+            }
+            if (root.wpCount > 0 && selectedIndex === root.themeBase) {
+                if (root.wallFocus) {
+                    root.wallCursor = Services.Theme.clamp(root.wallCursor + dir, 0, root.wpCount - 1);
+                    root.syncWallCursor();
+                }
                 return;
             }
             switch (selectedIndex - root.inputBase) {
@@ -410,7 +408,13 @@ BasePopup {
     }
     function activateSelected(): void {
         if (root.tab === 0) {
-            if (root.wpCount > 0 && selectedIndex === 0) {
+            if (selectedIndex === 0) {
+                if (root.paletteDropOpen)
+                    root.commitPaletteCursor();
+                else
+                    root.togglePaletteDrop();
+                return;
+            } else if (root.wpCount > 0 && selectedIndex === root.themeBase) {
                 if (!root.wallFocus) {
                     root.ensureWallCursor();
                     root.wallFocus = true;
@@ -421,12 +425,6 @@ BasePopup {
                         Services.Settings.setWallpaper(p);
                     root.syncWallCursor();
                 }
-                return;
-            } else if (selectedIndex === root.themeBase) {
-                if (root.paletteDropOpen)
-                    root.commitPaletteCursor();
-                else
-                    root.togglePaletteDrop();
                 return;
             } else if (selectedIndex === root.inputBase + 2)
                 Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll);
@@ -674,7 +672,7 @@ BasePopup {
     property int paletteMenuMax: 6
     property int paletteMenuH: Services.Theme.schemeLabels.length === 0 ? 0 : Services.Theme.listHeight(Math.min(Services.Theme.schemeLabels.length, root.paletteMenuMax)) + 8
     function paletteRowTop(): int {
-        return root.sectionH + Services.Theme.popupSpacing + root.wallColH + (root.wpCount > 0 ? Services.Theme.popupSpacing + root.wallHintH : 0) + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing;
+        return root.sectionH + Services.Theme.popupSpacing;
     }
     property int wallHintH: 14
     property int wallWrapPad: 6
@@ -706,7 +704,7 @@ BasePopup {
     function contentHeight(): int {
         if (root.tab === 0) {
             const top = root.paletteRowTop() + Services.Theme.rowHeight;
-            const base = top + Services.Theme.popupSpacing + root.swatchH + Services.Theme.popupSpacing + root.themeHintH + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
+            const base = top + Services.Theme.popupSpacing + root.swatchH + Services.Theme.popupSpacing + root.themeHintH + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.wallColH + (root.wpCount > 0 ? Services.Theme.popupSpacing + root.wallHintH : 0) + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
             if (root.paletteDropOpen)
                 return Math.max(base, top + Services.Theme.listSpacing + root.paletteMenuH);
             return base;
