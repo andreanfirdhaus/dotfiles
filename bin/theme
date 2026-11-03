@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+# theme - render every app color config from one palette.
+#
+#   theme list
+#   theme current
+#   theme set <preset|wallpaper> [--image PATH] [--no-hooks]
+#   theme apply [--no-hooks]
+
+set -euo pipefail
+
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+REPO="$(cd "$(dirname "$SELF")/.." && pwd)"
+PALETTE_DIR="$REPO/theme/palettes"
+TEMPLATE_DIR="$REPO/theme/templates"
+FILTER="$REPO/theme/lib/matugen.jq"
+SETTINGS="${XDG_DATA_HOME:-$HOME/.local/share}/quickshell/settings.json"
+QS_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/quickshell"
+
+NO_HOOKS=0
+IMAGE=""
+TMP=""
+
+cleanup() { if [ -n "$TMP" ]; then rm -rf "$TMP"; fi; }
+trap cleanup EXIT
+
+die() { printf 'theme: %s\n' "$*" >&2; exit 1; }
+warn() { printf 'theme: %s\n' "$*" >&2; }
+usage() { sed -n '2,8p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+
+command -v jq >/dev/null 2>&1 || die "jq is required"
+
+settings_field() {
+    [ -f "$SETTINGS" ] || return 0
+    jq -r ".$1 // empty" "$SETTINGS" 2>/dev/null || true
+}
+
+schemes_json() {
+    local f id
+    {
+        for f in "$PALETTE_DIR"/*.json; do
+            id="$(basename "$f" .json)"
+            jq -c --arg id "$id" '{id: $id, label: .label}' "$f"
+        done
+        if command -v matugen >/dev/null 2>&1; then
+            printf '{"id":"wallpaper","label":"Wallpaper"}\n'
+        fi
+    } | jq -s 'sort_by(if .id == "vague" then "" else .label end)'
+}
+
+current_scheme() {
+    settings_field colorscheme
+}
+
+list_schemes() {
+    local active
+    active="$(current_scheme)"
+    [ -n "$active" ] || active="vague"
+    while IFS=$'\t' read -r id label; do
+        if [ "$id" = "$active" ]; then
+            printf '* %-18s %s\n' "$id" "$label"
+        else
+            printf '  %-18s %s\n' "$id" "$label"
+        fi
+    done < <(schemes_json | jq -r '.[] | [.id, .label] | @tsv')
+    return 0
+}
+
+wallpaper_path() {
+    if [ -n "$IMAGE" ]; then
+        printf '%s' "$IMAGE"
+        return 0
+    fi
+    local saved
+    saved="$(settings_field wallpaperOverride)"
+    if [ -n "$saved" ] && [ -f "$saved" ]; then
+        printf '%s' "$saved"
+        return 0
+    fi
+    find "$REPO/wallpapers" -maxdepth 1 -type f \
+        \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+        2>/dev/null | sort | head -n 1
+}
+
+build_wallpaper_palette() {
+    local img
+    img="$(wallpaper_path)"
+    [ -n "$img" ] && [ -f "$img" ] || return 1
+    command -v matugen >/dev/null 2>&1 || return 1
+    matugen image "$img" -m dark -j hex --prefer saturation > "$TMP/matugen.json" 2>/dev/null || return 1
+    jq -f "$FILTER" "$TMP/matugen.json" > "$TMP/palette.json" || return 1
+}
+
+resolve_palette() {
+    local scheme=$1
+    if [ "$scheme" = "wallpaper" ]; then
+        if build_wallpaper_palette; then
+            printf '%s' "$scheme"
+            return 0
+        fi
+        warn "cannot derive a palette from the wallpaper, falling back to vague"
+        scheme="vague"
+    fi
+    [ -f "$PALETTE_DIR/$scheme.json" ] || die "unknown scheme: $scheme"
+    cp "$PALETTE_DIR/$scheme.json" "$TMP/palette.json"
+    printf '%s' "$scheme"
+}
+
+build_token_script() {
+    jq -r '
+        def snake: gsub("(?<a>[a-z0-9])(?<b>[A-Z])"; "\(.a)_\(.b)") | ascii_upcase;
+        def map_lines($prefix; $obj):
+            $obj | to_entries[]
+            | "s|@\($prefix)_\(.key | snake)@|\(.value)|g";
+        def map_raw($prefix; $obj):
+            $obj | to_entries[]
+            | "s|@\($prefix)_\(.key | snake)_RAW@|\(.value | ltrimstr("#"))|g";
+        [
+            map_lines("UI"; .ui),
+            map_lines("SYN"; .syntax),
+            map_lines("ANSI"; .ansi),
+            map_raw("UI"; .ui),
+            map_raw("SYN"; .syntax),
+            map_raw("ANSI"; .ansi),
+            "s|@LABEL@|\(.label)|g"
+        ] | .[]
+    ' "$TMP/palette.json" | sed 's/[&\\]/\\&/g' > "$TMP/tokens.sed"
+}
+
+render_template() {
+    local tpl=$1 out=$2
+    mkdir -p "$(dirname "$out")"
+    sed -f "$TMP/tokens.sed" "$tpl" > "$out.tmp"
+    mv -f "$out.tmp" "$out"
+}
+
+render_all() {
+    local scheme=$1 palette="$TMP/palette.json"
+
+    build_token_script
+
+    render_template "$TEMPLATE_DIR/foot.ini.in" "$REPO/foot/theme.ini"
+    render_template "$TEMPLATE_DIR/btop.theme.in" "$REPO/btop/themes/theme.theme"
+    render_template "$TEMPLATE_DIR/bat.tmTheme.in" "$REPO/bat/themes/theme.tmTheme"
+    render_template "$TEMPLATE_DIR/yazi-tmtheme.xml.in" "$REPO/yazi/flavors/theme.yazi/tmtheme.xml"
+    render_template "$TEMPLATE_DIR/yazi-flavor.toml.in" "$REPO/yazi/flavors/theme.yazi/flavor.toml"
+    render_template "$TEMPLATE_DIR/lazygit.yml.in" "$REPO/lazygit/config.yml"
+    render_template "$TEMPLATE_DIR/hypr.lua.in" "$REPO/hypr/theme.lua"
+
+    jq '{
+        bg: .ui.bg,
+        inactiveBg: .ui.surface,
+        fg: .ui.fg,
+        floatBorder: .ui.border,
+        line: .ui.overlay,
+        comment: .syntax.comment,
+        builtin: .syntax.builtin,
+        func: .syntax.function,
+        string: .syntax.string,
+        number: .syntax.number,
+        property: .syntax.property,
+        constant: .syntax.constant,
+        parameter: .syntax.parameter,
+        visual: .syntax.visual,
+        error: .ui.red,
+        warning: .ui.yellow,
+        hint: .ui.hint,
+        operator: .syntax.operator,
+        keyword: .syntax.keyword,
+        type: .syntax.type,
+        search: .syntax.search,
+        plus: .ui.green,
+        delta: .ui.yellow
+    }' "$palette" > "$REPO/nvim/theme.json.tmp"
+    mv -f "$REPO/nvim/theme.json.tmp" "$REPO/nvim/theme.json"
+
+    mkdir -p "$QS_STATE"
+    jq --arg active "$scheme" --argjson schemes "$(schemes_json)" \
+        '. + {active: $active, schemes: $schemes}' \
+        "$palette" > "$QS_STATE/palette.json.tmp"
+    mv -f "$QS_STATE/palette.json.tmp" "$QS_STATE/palette.json"
+}
+
+persist() {
+    local scheme=$1 dir tmp
+    dir="$(dirname "$SETTINGS")"
+    mkdir -p "$dir"
+    tmp="$SETTINGS.tmp.$$"
+    if [ -f "$SETTINGS" ] && jq --arg s "$scheme" '.colorscheme = $s' "$SETTINGS" > "$tmp" 2>/dev/null; then
+        mv -f "$tmp" "$SETTINGS"
+    else
+        rm -f "$tmp"
+        jq -n --arg s "$scheme" '{colorscheme: $s}' > "$tmp"
+        mv -f "$tmp" "$SETTINGS"
+    fi
+}
+
+run_hooks() {
+    [ "$NO_HOOKS" -eq 1 ] && return 0
+    if command -v bat >/dev/null 2>&1; then
+        bat cache --build >/dev/null 2>&1 || warn "bat cache --build failed"
+    fi
+    if command -v hyprctl >/dev/null 2>&1 && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+        hyprctl reload >/dev/null 2>&1 || warn "hyprctl reload failed"
+    fi
+    if pgrep -x foot >/dev/null 2>&1; then
+        pkill -USR1 -x foot 2>/dev/null || true
+    fi
+}
+
+apply_scheme() {
+    local scheme
+    TMP="$(mktemp -d "${TMPDIR:-/tmp}/theme.XXXXXX")"
+    scheme="$(resolve_palette "$1")"
+    render_all "$scheme"
+    persist "$scheme"
+    run_hooks
+    printf 'theme: %s\n' "$(jq -r '.label' "$TMP/palette.json")"
+}
+
+parse_flags() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --no-hooks) NO_HOOKS=1 ;;
+            --image)
+                shift
+                [ $# -gt 0 ] || die "--image needs a path"
+                IMAGE=$1
+                ;;
+            --image=*) IMAGE="${1#*=}" ;;
+            -h|--help) usage; exit 0 ;;
+            *) die "unknown option: $1" ;;
+        esac
+        shift
+    done
+}
+
+cmd="${1:-}"
+[ $# -gt 0 ] && shift
+
+case "$cmd" in
+    list) list_schemes ;;
+    current)
+        scheme="$(current_scheme)"
+        printf '%s\n' "${scheme:-vague}"
+        ;;
+    set)
+        [ $# -gt 0 ] || die "usage: theme set <preset|wallpaper>"
+        scheme=$1
+        shift
+        parse_flags "$@"
+        apply_scheme "$scheme"
+        ;;
+    apply)
+        parse_flags "$@"
+        scheme="$(current_scheme)"
+        apply_scheme "${scheme:-vague}"
+        ;;
+    ""|-h|--help|help) usage ;;
+    *) die "unknown command: $cmd" ;;
+esac

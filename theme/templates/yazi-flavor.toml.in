@@ -1,0 +1,214 @@
+# vim:fileencoding=utf-8:foldmethod=marker
+
+# : Manager {{{
+
+[mgr]
+cwd = { fg = "@SYN_BUILTIN@" }
+
+# Find
+find_keyword  = { fg = "@UI_YELLOW@", bold = true, italic = true, underline = true }
+find_position = { fg = "@UI_ACCENT@", bg = "reset", bold = true, italic = true }
+
+# Marker
+marker_copied   = { fg = "@UI_GREEN@", bg = "@UI_GREEN@" }
+marker_cut      = { fg = "@UI_RED@", bg = "@UI_RED@" }
+marker_marked   = { fg = "@SYN_BUILTIN@", bg = "@SYN_BUILTIN@" }
+marker_selected = { fg = "@UI_YELLOW@", bg = "@UI_YELLOW@" }
+
+# Count
+count_copied   = { fg = "@UI_BG@", bg = "@UI_GREEN@" }
+count_cut      = { fg = "@UI_BG@", bg = "@UI_RED@" }
+count_selected = { fg = "@UI_BG@", bg = "@UI_YELLOW@" }
+
+# Border
+border_symbol = "│"
+border_style  = { fg = "@UI_DIM@" }
+
+# : }}}
+
+
+# : Tabs {{{
+
+[tabs]
+active   = { fg = "@UI_BG@", bg = "@UI_HINT@", bold = true }
+inactive = { fg = "@UI_HINT@", bg = "@UI_OVERLAY@" }
+
+# : }}}
+
+
+# : Mode {{{
+
+[mode]
+
+normal_main = { fg = "@UI_BG@", bg = "@UI_ACCENT@", bold = true }
+normal_alt  = { fg = "@UI_HINT@", bg = "@UI_OVERLAY@" }
+
+# Select mode
+select_main = { fg = "@UI_BG@", bg = "@SYN_BUILTIN@", bold = true }
+select_alt  = { fg = "@SYN_BUILTIN@", bg = "@UI_OVERLAY@" }
+
+# Unset mode
+unset_main = { fg = "@UI_BG@", bg = "@SYN_FUNCTION@", bold = true }
+unset_alt  = { fg = "@SYN_FUNCTION@", bg = "@UI_OVERLAY@" }
+
+# : }}}
+
+
+# : Status bar {{{
+
+[status]
+# Permissions
+perm_sep   = { fg = "@UI_DIM@" }
+perm_type  = { fg = "@UI_HINT@" }
+perm_read  = { fg = "@UI_YELLOW@" }
+perm_write = { fg = "@UI_RED@" }
+perm_exec  = { fg = "@UI_GREEN@" }
+
+# Progress
+progress_label  = { fg = "@UI_BRIGHT@", bold = true }
+progress_normal = { fg = "@UI_GREEN@", bg = "@UI_SURFACE@" }
+progress_error  = { fg = "@UI_YELLOW@", bg = "@UI_RED@" }
+
+# : }}}
+
+
+# : Pick {{{
+
+[pick]
+border   = { fg = "@UI_HINT@" }
+active   = { fg = "@UI_ACCENT@", bold = true }
+inactive = {}
+
+# : }}}
+
+
+# : Input {{{
+
+[input]
+border   = { fg = "@UI_ACCENT@" }
+title    = {}
+value    = {}
+selected = { reversed = true }
+
+# : }}}
+
+
+# : Completion {{{
+
+[cmp]
+border = { fg = "@UI_HINT@" }
+
+# : }}}
+
+
+# : Tasks {{{
+
+[tasks]
+border  = { fg = "@UI_HINT@" }
+title   = {}
+hovered = { fg = "@UI_ACCENT@", bold = true }
+
+# : }}}
+
+
+# : Which {{{
+
+[which]
+mask            = { bg = "@UI_OVERLAY@" }
+cand            = { fg = "@SYN_BUILTIN@" }
+rest            = { fg = "@SYN_OPERATOR@" }
+desc            = { fg = "@UI_ACCENT@" }
+separator       = "  "
+separator_style = { fg = "@SYN_COMMENT@" }
+
+# : }}}
+
+
+# : Help {{{
+
+[help]
+on      = { fg = "@SYN_BUILTIN@" }
+run     = { fg = "@UI_ACCENT@" }
+hovered = { reversed = true, bold = true }
+footer  = { fg = "@UI_OVERLAY@", bg = "@UI_FG@" }
+
+# : }}}
+
+
+# : Spotter {{{
+
+[spot]
+border   = { fg = "@UI_HINT@" }
+title    = { fg = "@UI_HINT@" }
+tbl_col  = { fg = "@SYN_BUILTIN@" }
+tbl_cell = { fg = "@UI_ACCENT@", bg = "@UI_SURFACE@" }
+
+# : }}}
+
+
+# : Notification {{{
+
+[notify]
+title_info  = { fg = "@UI_GREEN@" }
+title_warn  = { fg = "@UI_YELLOW@" }
+title_error = { fg = "@UI_RED@" }
+
+# : }}}
+
+
+# : File-specific styles {{{
+
+[filetype]
+
+rules = [
+	# Image
+	{ mime = "image/*", fg = "@SYN_BUILTIN@" },
+	# Media
+	{ mime = "{audio,video}/*", fg = "@UI_YELLOW@" },
+	# Archive
+	{ mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", fg = "@UI_ACCENT@" },
+	# Document
+	{ mime = "application/{pdf,doc,rtf}", fg = "@UI_GREEN@" },
+	# Virtual file system
+	{ mime = "vfs/{absent,stale}", fg = "@SYN_OPERATOR@" },
+	# Fallback
+	{ url = "*", fg = "@UI_FG@" },
+	{ url = "*/", fg = "@SYN_KEYWORD@" },
+]
+
+# : }}}
+
+[icon]
+
+dirs = [
+	{ name = ".config", text = "", fg = "@UI_ACCENT@" },
+	{ name = ".git", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = ".github", text = "", fg = "@UI_HINT@" },
+	{ name = ".npm", text = "", fg = "@UI_HINT@" },
+	{ name = "Desktop", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Development", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Documents", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Downloads", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Library", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Movies", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Music", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Pictures", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Public", text = "", fg = "@SYN_BUILTIN@" },
+	{ name = "Videos", text = "", fg = "@SYN_BUILTIN@" },
+]
+conds = [
+	# Special files
+	{ if = "orphan", text = "", fg = "@UI_FG@" },
+	{ if = "link", text = "", fg = "@UI_DIM@" },
+	{ if = "block", text = "", fg = "@SYN_FUNCTION@" },
+	{ if = "char", text = "", fg = "@SYN_FUNCTION@" },
+	{ if = "fifo", text = "", fg = "@SYN_FUNCTION@" },
+	{ if = "sock", text = "", fg = "@SYN_FUNCTION@" },
+	{ if = "sticky", text = "", fg = "@SYN_FUNCTION@" },
+	{ if = "dummy", text = "", fg = "@UI_RED@" },
+
+	# Fallback
+	{ if = "dir", text = "", fg = "@SYN_FUNCTION@" },
+	{ if = "exec", text = "", fg = "@UI_GREEN@" },
+	{ if = "!dir", text = "", fg = "@UI_FG@" },
+]

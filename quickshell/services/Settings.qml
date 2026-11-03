@@ -24,6 +24,7 @@ Singleton {
     property string criticalBatteryAction: "notify"
     property string lidCloseAction: "suspend"
     property string powerProfileOnBattery: "keep"
+    property string colorscheme: "vague"
 
     property bool loaded: false
 
@@ -58,6 +59,7 @@ Singleton {
             criticalBatteryAction: settings.criticalBatteryAction,
             lidCloseAction: settings.lidCloseAction,
             powerProfileOnBattery: settings.powerProfileOnBattery,
+            colorscheme: Theme.paletteReady ? Theme.activeScheme : settings.colorscheme,
             mainMonitor: Monitors.mainMonitor,
             monitorConfigs: Monitors.monitorConfigs
         };
@@ -79,6 +81,7 @@ Singleton {
         settings.criticalBatteryAction = U.pickOpt(obj.criticalBatteryAction, "notify", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
         settings.lidCloseAction = U.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
         settings.powerProfileOnBattery = U.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
+        settings.colorscheme = U.pickStr(obj.colorscheme, "vague");
         Monitors.applyLoaded(obj);
         settings.enforceIdleOrder();
     }
@@ -95,12 +98,14 @@ Singleton {
             return;
         settings.wallpaperOverride = path;
         Wallpaper.applyOverride(path);
+        Theme.wallpaperChanged(path);
         settings.scheduleSave();
     }
     function ensureWallpaper(): void {
         if (settings.wallpaperOverride === "" && settings.wallpapers.length > 0) {
             settings.wallpaperOverride = settings.wallpapers[0];
             Wallpaper.applyOverride(settings.wallpaperOverride);
+            Theme.wallpaperChanged(settings.wallpaperOverride);
             settings.scheduleSave();
         }
     }

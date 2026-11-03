@@ -62,6 +62,7 @@ BasePopup {
     readonly property int openDropdown: root.openMenu && root.openMenu.kind === "sys" ? root.openMenu.index : -1
     readonly property string openMonRes: root.openMenu && root.openMenu.kind === "res" ? root.openMenu.name : ""
     readonly property bool openMainDrop: root.openMenu !== null && root.openMenu.kind === "main"
+    readonly property bool paletteDropOpen: root.openMenu !== null && root.openMenu.kind === "palette"
     property int dropCursor: 0
     property bool previewGrab: false
     property string previewGrabName: ""
@@ -174,7 +175,7 @@ BasePopup {
     }
     function itemCount(): int {
         if (root.tab === 0)
-            return root.wpInputBase + root.inputRows;
+            return root.inputBase + root.inputRows;
         if (root.tab === 1)
             return 9 + root.asusRows;
         return root.monFirst + root.monCount * root.monRows + 1;
@@ -221,6 +222,10 @@ BasePopup {
             root.moveCursor(root.dropdownOptions(root.openDropdown), dir);
             return;
         }
+        if (root.tab === 0 && root.paletteDropOpen) {
+            root.moveCursor(root.paletteOptions(), dir);
+            return;
+        }
         if (root.tab === 2 && root.openMainDrop) {
             root.moveCursor(root.mainOptions(), dir);
             return;
@@ -250,8 +255,13 @@ BasePopup {
         root.syncWallCursor();
     }
     function sectionBounds(): var {
-        if (root.tab === 0)
-            return root.wpCount > 0 ? [0, 1] : [0];
+        if (root.tab === 0) {
+            const bounds = [];
+            if (root.wpCount > 0)
+                bounds.push(0);
+            bounds.push(root.themeBase, root.inputBase);
+            return bounds;
+        }
         if (root.tab === 1)
             return [0, 4, root.sysIdx(7)];
         const bounds = [0, 1];
@@ -312,7 +322,18 @@ BasePopup {
                 }
                 return;
             }
-            switch (selectedIndex - root.wpInputBase) {
+            if (selectedIndex === root.themeBase) {
+                if (root.paletteDropOpen) {
+                    if (dir < 0)
+                        root.closeDrop();
+                    else
+                        root.commitPaletteCursor();
+                    return;
+                }
+                root.cyclePalette(dir);
+                return;
+            }
+            switch (selectedIndex - root.inputBase) {
             case 0: Services.Settings.setSensitivity(Services.Settings.sensitivity + dir * 0.1); break;
             case 1: Services.Settings.setTouchScroll(Services.Settings.touchScroll + dir * 0.1); break;
             case 2: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll); break;
@@ -401,7 +422,13 @@ BasePopup {
                     root.syncWallCursor();
                 }
                 return;
-            } else if (selectedIndex === root.wpInputBase + 2)
+            } else if (selectedIndex === root.themeBase) {
+                if (root.paletteDropOpen)
+                    root.commitPaletteCursor();
+                else
+                    root.togglePaletteDrop();
+                return;
+            } else if (selectedIndex === root.inputBase + 2)
                 Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll);
             return;
         }
@@ -539,6 +566,38 @@ BasePopup {
         root.applyDropValue(i, opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
         root.closeDrop();
     }
+    function paletteOptions(): var {
+        return Services.Theme.schemeLabels;
+    }
+    function togglePaletteDrop(): void {
+        if (root.paletteDropOpen) {
+            root.closeDrop();
+            return;
+        }
+        const opts = root.paletteOptions();
+        if (opts.length === 0)
+            return;
+        root.dropCursor = Math.max(0, opts.indexOf(Services.Theme.activeLabel));
+        root.openMenu = {kind: "palette"};
+    }
+    function commitPaletteCursor(): void {
+        const opts = root.paletteOptions();
+        if (!root.paletteDropOpen || opts.length === 0) {
+            root.closeDrop();
+            return;
+        }
+        root.applyPalette(opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
+        root.closeDrop();
+    }
+    function applyPalette(label: string): void {
+        Services.Theme.applyScheme(Services.Theme.schemeIdFor(label));
+    }
+    function cyclePalette(dir: int): void {
+        const opts = root.paletteOptions();
+        if (opts.length === 0)
+            return;
+        root.applyPalette(SettingsUtil.cycleOpt(opts, Services.Theme.activeLabel, dir));
+    }
     function toggleMonModeDrop(name: string): void {
         if (root.openMonRes === name) {
             root.closeDrop();
@@ -608,6 +667,15 @@ BasePopup {
     property int wpRowsVisible: Math.ceil(root.wpVisible / root.wpCols)
     property int wpListH: root.wpRowsVisible * root.wpCellH + Math.max(0, root.wpRowsVisible - 1) * root.wpGap
     property int wpInputBase: root.wpCount > 0 ? 1 : 0
+    property int themeBase: root.wpInputBase
+    property int inputBase: root.themeBase + 1
+    property int swatchH: 14
+    property int themeHintH: 14
+    property int paletteMenuMax: 6
+    property int paletteMenuH: Services.Theme.schemeLabels.length === 0 ? 0 : Services.Theme.listHeight(Math.min(Services.Theme.schemeLabels.length, root.paletteMenuMax)) + 8
+    function paletteRowTop(): int {
+        return root.sectionH + Services.Theme.popupSpacing + root.wallColH + (root.wpCount > 0 ? Services.Theme.popupSpacing + root.wallHintH : 0) + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing;
+    }
     property int wallHintH: 14
     property int wallWrapPad: 6
     property int inputRows: 3
@@ -636,8 +704,13 @@ BasePopup {
         return n + root.asusRows;
     }
     function contentHeight(): int {
-        if (root.tab === 0)
-            return root.sectionH + Services.Theme.popupSpacing + root.wallColH + (root.wpCount > 0 ? Services.Theme.popupSpacing + root.wallHintH : 0) + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
+        if (root.tab === 0) {
+            const top = root.paletteRowTop() + Services.Theme.rowHeight;
+            const base = top + Services.Theme.popupSpacing + root.swatchH + Services.Theme.popupSpacing + root.themeHintH + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
+            if (root.paletteDropOpen)
+                return Math.max(base, top + Services.Theme.listSpacing + root.paletteMenuH);
+            return base;
+        }
         if (root.tab === 1) {
             let h = root.sysIdleH + root.sysBattH + root.sysProfH + 3 * root.sectionH + 30 + 6 * Services.Theme.popupSpacing;
             return h;

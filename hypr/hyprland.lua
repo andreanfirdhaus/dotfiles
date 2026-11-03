@@ -36,10 +36,6 @@ hl.config({
 		gaps_out = 5,
 		border_size = 1,
 		layout = "dwindle",
-		col = {
-			active_border = { colors = { "rgba(cdcdcdcc)", "rgba(606079cc)" }, angle = 45 },
-			inactive_border = "rgba(252530aa)",
-		},
 	},
 	decoration = {
 		rounding = 0,
@@ -49,7 +45,6 @@ hl.config({
 			enabled = true,
 			range = 6,
 			render_power = 2,
-			color = "0xee000000",
 		},
 		blur = {
 			enabled = true,
@@ -82,6 +77,10 @@ hl.config({
 		},
 	},
 })
+
+pcall(function()
+	dofile((os.getenv("HOME") or "") .. "/.config/hypr/theme.lua")
+end)
 
 hl.curve("funk", { type = "bezier", points = { { 0.60, 0.01 }, { 0.40, 1.00 } } })
 hl.animation({ leaf = "fade", enabled = false })
