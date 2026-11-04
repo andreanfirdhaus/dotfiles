@@ -250,6 +250,8 @@ BasePopup {
             root.syncWallCursor();
             return;
         }
+        selectedIndex += dir;
+        root.clampSelection();
     }
     function sectionBounds(): var {
         if (root.tab === 0) {
