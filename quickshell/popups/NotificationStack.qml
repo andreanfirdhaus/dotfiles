@@ -21,7 +21,7 @@ Item {
         }
         margins.top: (toastWin.screenFullscreen ? 0 : Services.Theme.barHeight) + Services.Theme.popupTopGap
         margins.right: Services.Theme.popupMargin
-        readonly property bool screenFullscreen: Services.Bars.isAnyFullscreen(root.popupScreen?.name ?? "")
+        readonly property bool screenFullscreen: Services.HyprBridge.isAnyFullscreen(root.popupScreen?.name ?? "")
         exclusiveZone: -1
         readonly property bool parked: root.bar.rightPopupBottom > 0
         readonly property int stackWidth: toastWin.parked ? root.bar.rightPopupWidth : Services.Theme.toastWidth

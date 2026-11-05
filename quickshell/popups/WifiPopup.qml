@@ -231,11 +231,8 @@ DeviceListBase {
                             font.pixelSize: Services.Theme.px12
                             visible: !!modelData.secure
                         }
-                        ForgetButton {
-                            selected: row.selected
-                            visible: modelData.known && !modelData.active && !row.busy
-                            onForget: root.forgetSelected()
-                        }
+                        showForget: modelData.known && !modelData.active && !row.busy
+                        onForgetRequested: root.forgetSelected()
                     }
                 }
             }

@@ -6,15 +6,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string paletteFile: {
-        const state = Quickshell.env("XDG_STATE_HOME") ?? "";
-        const home = Quickshell.env("HOME") ?? "";
-        if (state !== "")
-            return state + "/quickshell/palette.json";
-        if (home !== "")
-            return home + "/.local/state/quickshell/palette.json";
-        return "";
-    }
+    readonly property string paletteFile: Paths.statePath("palette.json")
     property var palette: ({})
     property bool paletteReady: false
     function pick(group, key, fallback) {

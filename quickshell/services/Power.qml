@@ -402,4 +402,121 @@ Singleton {
         }
         Component.onCompleted: logindProbe.running = true
     }
+
+    readonly property var asusProfileOptions: ["Quiet", "Balanced", "Performance"]
+    property string asusProfile: ""
+    property int asusChargeLimit: 100
+    property bool asusHasAsusctl: false
+    property bool asusHasPlatformProfile: false
+    property bool asusHasChargeControl: false
+    readonly property bool asusAvailable: power.asusHasAsusctl
+    readonly property string asusProfileLabel: power.asusProfile !== "" ? power.asusProfile : "unknown"
+
+    function refreshAsus(): void {
+        if (!asusProbe.running)
+            asusProbe.running = true;
+        asusProfileView.reload();
+        asusChargeView.reload();
+    }
+
+    function cycleAsusProfile(dir: int): void {
+        if (!power.asusHasAsusctl)
+            return;
+        const order = power.asusProfileOptions;
+        let i = order.indexOf(power.asusProfile);
+        if (i < 0)
+            i = 1;
+        const step = dir >= 0 ? 1 : order.length - 1;
+        power.setAsusProfile(order[(i + step) % order.length], false);
+    }
+
+    function setAsusProfile(name: string, quiet: bool): void {
+        if (!power.asusProfileOptions.includes(name))
+            return;
+        if (!power.asusHasAsusctl)
+            return;
+        power.asusProfile = name;
+        Quickshell.execDetached(["asusctl", "profile", "set", name]);
+        asusRefreshSoon.restart();
+    }
+
+    function setAsusChargeLimit(v: real): void {
+        const next = Math.round(Math.max(20, Math.min(100, v)));
+        if (!power.asusHasAsusctl)
+            return;
+        if (next === power.asusChargeLimit)
+            return;
+        power.asusChargeLimit = next;
+        Quickshell.execDetached(["asusctl", "battery", "limit", String(next)]);
+        asusRefreshSoon.restart();
+    }
+
+    Timer {
+        id: asusPoller
+        interval: 30000
+        running: power.asusHasAsusctl || power.asusHasPlatformProfile || power.asusHasChargeControl
+        repeat: true
+        onTriggered: {
+            if (!power.asusHasAsusctl && !power.asusHasPlatformProfile && !power.asusHasChargeControl)
+                return;
+            power.refreshAsus();
+        }
+    }
+    Timer {
+        id: asusRefreshSoon
+        interval: 1500
+        repeat: false
+        onTriggered: {
+            asusProfileView.reload();
+            asusChargeView.reload();
+        }
+    }
+    Timer {
+        id: asusProbeRetry
+        interval: 30000
+        repeat: false
+        onTriggered: {
+            if (!power.asusHasAsusctl && !asusProbe.running)
+                asusProbe.running = true;
+        }
+    }
+    FileView {
+        id: asusProfileView
+        path: "/sys/firmware/acpi/platform_profile"
+        printErrors: false
+        onLoaded: {
+            const cur = asusProfileView.text().trim().toLowerCase();
+            power.asusHasPlatformProfile = true;
+            if (cur === "quiet")
+                power.asusProfile = "Quiet";
+            else if (cur === "performance")
+                power.asusProfile = "Performance";
+            else if (cur === "balanced")
+                power.asusProfile = "Balanced";
+        }
+        onLoadFailed: power.asusHasPlatformProfile = false
+    }
+    FileView {
+        id: asusChargeView
+        path: "/sys/class/power_supply/BAT1/charge_control_end_threshold"
+        printErrors: false
+        onLoaded: {
+            const v = parseInt(asusChargeView.text().trim());
+            if (!isNaN(v) && v >= 20 && v <= 100) {
+                power.asusHasChargeControl = true;
+                power.asusChargeLimit = v;
+            }
+        }
+        onLoadFailed: power.asusHasChargeControl = false
+    }
+    Process {
+        id: asusProbe
+        command: ["sh", "-c", "command -v asusctl >/dev/null"]
+        onExited: exitCode => {
+            power.asusHasAsusctl = exitCode === 0;
+            if (exitCode !== 0)
+                asusProbeRetry.restart();
+        }
+        Component.onCompleted: asusProbe.running = true
+    }
 }

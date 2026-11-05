@@ -9,6 +9,33 @@ Singleton {
 
     property string wallpaperOverride: ""
     property var wallpapers: []
+    property string wallpaperSource: ""
+    property bool wallpaperScanDone: false
+    property bool wallpaperNotifiedEmpty: false
+
+    function resolveWallpaper(): void {
+        if (settings.wallpaperOverride !== "") {
+            settings.wallpaperNotifiedEmpty = false;
+            settings.wallpaperSource = "file://" + settings.wallpaperOverride;
+            return;
+        }
+        const first = settings.wallpapers.length > 0 ? settings.wallpapers[0] : "";
+        if (first !== "") {
+            settings.wallpaperNotifiedEmpty = false;
+            settings.wallpaperSource = "file://" + first;
+            return;
+        }
+        settings.wallpaperSource = "";
+        if (!settings.wallpaperScanDone || settings.wallpaperNotifiedEmpty)
+            return;
+        settings.wallpaperNotifiedEmpty = true;
+        console.warn("[wallpaper] no wallpaper found");
+        Notifs.notify({app: "wallpaper", summary: "No wallpaper found", body: "Add an image to ~/dotfiles/wallpapers or ~/Pictures/Wallpapers", syncId: "wallpaper", timeout: 8000});
+    }
+    onWallpapersChanged: {
+        if (settings.wallpaperOverride === "")
+            settings.resolveWallpaper();
+    }
 
     property real sensitivity: 0
     property real touchScroll: 0.8
@@ -28,21 +55,8 @@ Singleton {
 
     property bool loaded: false
 
-    readonly property string settingsFile: {
-        const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
-        const home = Quickshell.env("HOME") ?? "";
-        if (xdg !== "")
-            return xdg + "/quickshell/settings.json";
-        if (home !== "")
-            return home + "/.local/share/quickshell/settings.json";
-        return "";
-    }
-    readonly property string hypridleFile: {
-        const home = Quickshell.env("HOME") ?? "";
-        if (home === "")
-            return "";
-        return home + "/.config/hypr/hypridle.conf";
-    }
+    readonly property string settingsFile: Paths.dataPath("settings.json")
+    readonly property string hypridleFile: Paths.hyprPath("hypridle.conf")
 
     function snapshot(): var {
         return {
@@ -90,21 +104,21 @@ Singleton {
         HyprBridge.hypr("input:sensitivity", String(settings.sensitivity));
         HyprBridge.hypr("input:touchpad:scroll_factor", String(settings.touchScroll));
         HyprBridge.hypr("input:touchpad:natural_scroll", settings.naturalScroll ? "true" : "false");
-        Wallpaper.applyOverride(settings.wallpaperOverride);
+        settings.resolveWallpaper();
     }
 
     function setWallpaper(path: string): void {
         if (typeof path !== "string" || path === "")
             return;
         settings.wallpaperOverride = path;
-        Wallpaper.applyOverride(path);
+        settings.resolveWallpaper();
         Theme.wallpaperChanged(path);
         settings.scheduleSave();
     }
     function ensureWallpaper(): void {
         if (settings.wallpaperOverride === "" && settings.wallpapers.length > 0) {
             settings.wallpaperOverride = settings.wallpapers[0];
-            Wallpaper.applyOverride(settings.wallpaperOverride);
+            settings.resolveWallpaper();
             Theme.wallpaperChanged(settings.wallpaperOverride);
             settings.scheduleSave();
         }
@@ -202,8 +216,86 @@ Singleton {
         settings.powerProfileOnBattery = v;
         settings.scheduleSave();
     }
+    property bool idleDirty: false
+    function validIdleFile(file: string): bool {
+        if (typeof file !== "string" || file === "" || file.length > 512)
+            return false;
+        if (file.includes("\n") || file.includes("\0"))
+            return false;
+        if (file.includes(".."))
+            return false;
+        const home = Quickshell.env("HOME") ?? "";
+        if (home === "")
+            return false;
+        if (file !== home + "/.config/hypr/hypridle.conf" && !file.startsWith(home + "/.config/hypr/"))
+            return false;
+        return true;
+    }
+    function renderIdleConf(): string {
+        const L = [];
+        L.push("general {");
+        L.push("    lock_cmd = qs ipc call bar lock");
+        L.push("    before_sleep_cmd = loginctl lock-session");
+        L.push("    after_sleep_cmd = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"on\"))'");
+        L.push("}");
+        L.push("");
+        if (settings.dimTimeout > 0) {
+            L.push("listener {");
+            L.push("    timeout = " + settings.dimTimeout);
+            L.push("    on-timeout = b=$(brightnessctl g 2>/dev/null) && [ \"${b:-0}\" -gt 2500 ] 2>/dev/null && brightnessctl -s set 3% >/dev/null 2>&1; hyprctl hyprsunset gamma 50");
+            L.push("    on-resume = brightnessctl -r >/dev/null 2>&1; hyprctl hyprsunset gamma 100");
+            L.push("}");
+            L.push("");
+            L.push("listener {");
+            L.push("    timeout = " + settings.dimTimeout);
+            L.push("    on-timeout = brightnessctl -sd '*:kbd_backlight' set 0 >/dev/null 2>&1 || true");
+            L.push("    on-resume = brightnessctl -rd '*:kbd_backlight' >/dev/null 2>&1 || true");
+            L.push("}");
+            L.push("");
+        }
+        if (settings.lockTimeout > 0) {
+            L.push("listener {");
+            L.push("    timeout = " + settings.lockTimeout);
+            L.push("    on-timeout = loginctl lock-session");
+            L.push("}");
+            L.push("");
+        }
+        if (settings.screenOffTimeout > 0) {
+            L.push("listener {");
+            L.push("    timeout = " + settings.screenOffTimeout);
+            L.push("    on-timeout = loginctl lock-session; hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"off\"))'");
+            L.push("    on-resume = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"on\"))'");
+            L.push("}");
+            L.push("");
+        }
+        if (settings.suspendTimeout > 0) {
+            L.push("listener {");
+            L.push("    timeout = " + settings.suspendTimeout);
+            L.push("    on-timeout = loginctl lock-session; systemctl suspend");
+            L.push("}");
+            L.push("");
+        }
+        return L.join("\n");
+    }
+    function flushIdleConf(): void {
+        const file = settings.hypridleFile;
+        if (!settings.validIdleFile(file)) {
+            console.warn("quickshell: idle config target invalid, skipping write");
+            return;
+        }
+        if (idleWriter.running) {
+            settings.idleDirty = true;
+            return;
+        }
+        idleWriter.command = ["sh", "-c", 'mkdir -p "$(dirname "$1")"; printf "%s\\n" "$2" > "$1.tmp"; mv -f "$1.tmp" "$1"', "qs", file, settings.renderIdleConf()];
+        idleWriter.running = true;
+    }
     function writeIdleConf(): void {
-        IdleManager.request(settings.dimTimeout, settings.lockTimeout, settings.screenOffTimeout, settings.suspendTimeout, settings.hypridleFile);
+        if (!settings.validIdleFile(settings.hypridleFile)) {
+            console.warn("quickshell: idle config path invalid, skipping write");
+            return;
+        }
+        idleDebounce.restart();
     }
 
     property bool saveQueued: false
@@ -300,13 +392,46 @@ Singleton {
         command: ["sh", "-c", "for d in \"$HOME/dotfiles/wallpapers\" \"$HOME/Pictures/Wallpapers\"; do [ -d \"$d\" ] && find \"$d\" -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) 2>/dev/null; done | awk '!s[$0]++' | head -n 200 | { while IFS= read -r f; do k=$(stat -c '%d:%i:%s' \"$f\" 2>/dev/null) || k=\"0:0:0\"; echo \"$k $f\"; done; } | awk '!s[$1]++ {print substr($0,length($1)+2)}' | sort | head -n 100"]
         stdout: StdioCollector {
             onStreamFinished: {
+                settings.wallpaperScanDone = true;
                 settings.wallpapers = text.trim().split("\n").filter(s => s !== "");
                 settings.ensureWallpaper();
             }
         }
         onExited: exitCode => {
-            if (exitCode !== 0)
+            if (exitCode !== 0) {
+                settings.wallpaperScanDone = true;
                 settings.wallpapers = [];
+            }
+        }
+    }
+    Timer {
+        id: idleDebounce
+        interval: 500
+        repeat: false
+        onTriggered: settings.flushIdleConf()
+    }
+    Process {
+        id: idleWriter
+        onExited: exitCode => {
+            if (settings.idleDirty) {
+                settings.idleDirty = false;
+                settings.flushIdleConf();
+                return;
+            }
+            if (exitCode !== 0) {
+                Notifs.notify({app: "settings", summary: "Idle config write failed", body: settings.hypridleFile, timeout: 5000});
+                return;
+            }
+            if (!idleRestarter.running)
+                idleRestarter.running = true;
+        }
+    }
+    Process {
+        id: idleRestarter
+        command: ["sh", "-c", "pkill -x hypridle 2>/dev/null; sleep 0.2; command -v hypridle >/dev/null || exit 0; hypridle >/dev/null 2>&1 &"]
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                Notifs.notify({app: "settings", summary: "hypridle restart failed", body: "check hypridle.conf", timeout: 5000});
         }
     }
 }

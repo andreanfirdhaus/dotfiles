@@ -6,6 +6,7 @@ import "../components"
 import "../components/FilterUtils.js" as FilterUtils
 import "../components/PasteUtils.js" as PasteUtils
 import "../services" as Services
+import "../services/SettingsUtil.js" as U
 import "../emoji/emoji.js" as EmojiData
 BasePopup {
     id: root
@@ -67,7 +68,7 @@ BasePopup {
     }
     onVisibleChanged: {
         if (visible) {
-            Services.EmojiHistory.load();
+            root.loadRecents();
             search.text = "";
             filter.selMoved = false;
             root.activeAddress = "";
@@ -81,11 +82,78 @@ BasePopup {
                 focusProbe.running = false;
         }
     }
-    Connections {
-        target: Services.EmojiHistory
-        function onRecentsChanged(): void {
-            if (root.visible)
-                root.refilter();
+
+    property var recents: []
+    property bool recentsLoaded: false
+    property bool recentsLoading: false
+    property bool recentsLoadDone: false
+    readonly property string recentsFile: U.dataPath("emoji-recents.json")
+    onRecentsChanged: {
+        if (root.visible)
+            root.refilter();
+    }
+    function loadRecents(): void {
+        if (root.recentsLoaded || root.recentsLoading)
+            return;
+        if (root.recentsFile === "")
+            return;
+        root.recentsLoading = true;
+        recentsReader.running = true;
+    }
+    function recordEmoji(ch: string): void {
+        if (typeof ch !== "string" || ch === "" || ch.length > 32)
+            return;
+        if (root.recentsFile === "")
+            return;
+        root.recents = [ch].concat(root.recents.filter(c => c !== ch)).slice(0, 30);
+        recentsWriter.write(root.recentsFile, JSON.stringify(root.recents), false);
+    }
+    Services.AtomicWriter {
+        id: recentsWriter
+    }
+    Process {
+        id: recentsReader
+        command: ["cat", root.recentsFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (root.recentsLoadDone)
+                    return;
+                root.recentsLoadDone = true;
+                const duringLoad = root.recents.slice();
+                try {
+                    if (text.length > 65536)
+                        throw "history file too large";
+                    const arr = JSON.parse(text);
+                    if (Array.isArray(arr)) {
+                        const fromFile = arr.filter(c => typeof c === "string" && c !== "" && c.length <= 32).slice(0, 30);
+                        const seen = new Set();
+                        const merged = [];
+                        for (const c of duringLoad.concat(fromFile)) {
+                            if (seen.has(c))
+                                continue;
+                            seen.add(c);
+                            merged.push(c);
+                            if (merged.length >= 30)
+                                break;
+                        }
+                        root.recents = merged;
+                    }
+                } catch (_) {
+                    if (duringLoad.length > 0)
+                        root.recents = duringLoad.slice(0, 30);
+                }
+                root.recentsLoading = false;
+                root.recentsLoaded = true;
+            }
+        }
+        onExited: exitCode => {
+            if (root.recentsLoadDone)
+                return;
+            root.recentsLoadDone = true;
+            if (root.recentsLoading) {
+                root.recentsLoading = false;
+                root.recentsLoaded = true;
+            }
         }
     }
     function stepSelection(dir: int, stride: int): void {
@@ -106,7 +174,7 @@ BasePopup {
         if (q === "") {
             const seen = new Set();
             const head = [];
-            for (const ch of Services.EmojiHistory.recents) {
+            for (const ch of root.recents) {
                 if (seen.has(ch))
                     continue;
                 seen.add(ch);
@@ -151,7 +219,7 @@ BasePopup {
             return;
         if (root.clipTmp === "" || !root.clipTmp.endsWith("/qs-emoji-clip-restore"))
             return;
-        Services.EmojiHistory.record(entry.ch);
+        root.recordEmoji(entry.ch);
         root.pendingEmoji = entry.ch;
         saveProbe.command = ["sh", "-c", 'f="$1"; e="$2"; cliphist list 2>/dev/null | head -n 1 | cut -f1 > "$f.maxid"; rm -f "$f" "$f.type"; if t=$(wl-paste --list-types 2>/dev/null | head -n 1) && [ -n "$t" ]; then printf "%s" "$t" > "$f.type"; wl-paste -t "$t" > "$f" 2>/dev/null || rm -f "$f" "$f.type"; fi; printf "%s" "$e" | wl-copy', "qs", root.clipTmp, entry.ch];
         saveProbe.running = true;
