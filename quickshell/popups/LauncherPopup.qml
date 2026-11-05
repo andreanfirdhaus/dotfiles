@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../components"
-import "../services/SettingsUtil.js" as U
 import "../components/FilterUtils.js" as FilterUtils
 import "../services" as Services
 BasePopup {
@@ -102,7 +101,7 @@ BasePopup {
     property bool historyLoading: false
     property bool historyRewriting: false
     property bool historyRewriteQueued: false
-    readonly property string historyFile: U.dataPath("launch-history.jsonl")
+    readonly property string historyFile: Services.Paths.dataPath("launch-history.jsonl")
     onHistoryLoadedChanged: {
         if (root.visible)
             root.refilter();

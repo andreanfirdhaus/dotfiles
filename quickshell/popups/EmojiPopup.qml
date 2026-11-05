@@ -6,7 +6,6 @@ import "../components"
 import "../components/FilterUtils.js" as FilterUtils
 import "../components/PasteUtils.js" as PasteUtils
 import "../services" as Services
-import "../services/SettingsUtil.js" as U
 import "../emoji/emoji.js" as EmojiData
 BasePopup {
     id: root
@@ -87,7 +86,7 @@ BasePopup {
     property bool recentsLoaded: false
     property bool recentsLoading: false
     property bool recentsLoadDone: false
-    readonly property string recentsFile: U.dataPath("emoji-recents.json")
+    readonly property string recentsFile: Services.Paths.dataPath("emoji-recents.json")
     onRecentsChanged: {
         if (root.visible)
             root.refilter();
