@@ -148,8 +148,8 @@ hl.bind(secondMod .. " + D", hl.dsp.global("qs:dnd"))
 hl.bind(mainMod .. " + CTRL + L", hl.dsp.global("qs:lock"), { locked = true })
 
 hl.bind("Print", hl.dsp.global("qs:screenshot-area"))
-hl.bind(mainMod .. " + Print", hl.dsp.global("qs:screenshot-full"))
-hl.bind(secondMod .. " + Print", hl.dsp.global("qs:screenshot-window"))
+hl.bind("CTRL + Print", hl.dsp.global("qs:screenshot-full"))
+hl.bind("SHIFT + Print", hl.dsp.global("qs:screenshot-window"))
 
 hl.bind("XF86PowerOff", hl.dsp.global("qs:powerkey"), { locked = true })
 
