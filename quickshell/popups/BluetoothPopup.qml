@@ -255,11 +255,8 @@ DeviceListBase {
                         title: modelData.name || modelData.deviceName || modelData.address || "Unknown device"
                         subtitle: root.statusText(modelData)
                         reserveRight: 58
-                        ForgetButton {
-                            selected: row.selected
-                            visible: (modelData.paired || modelData.bonded) && !row.connected
-                            onForget: root.forgetSelected()
-                        }
+                        showForget: (modelData.paired || modelData.bonded) && !row.connected
+                        onForgetRequested: root.forgetSelected()
                     }
                 }
             }

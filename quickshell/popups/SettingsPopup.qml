@@ -50,8 +50,8 @@ BasePopup {
         }
     }
     Connections {
-        target: Services.Asus
-        function onAvailableChanged(): void {
+        target: Services.Power
+        function onAsusAvailableChanged(): void {
             root.keepSysRow();
             root.clampSelection();
         }
@@ -121,7 +121,7 @@ BasePopup {
         if (root.visible && root.tab === 2)
             Services.Monitors.refreshMonitors(false);
         if (root.visible && root.tab === 1)
-            Services.Asus.refresh();
+            Services.Power.refreshAsus();
     }
     onWpCountChanged: {
         if (root.wpCount === 0)
@@ -151,7 +151,7 @@ BasePopup {
             if (root.tab === 2)
                 Services.Monitors.refreshMonitors(false);
             if (root.tab === 1)
-                Services.Asus.refresh();
+                Services.Power.refreshAsus();
         } else {
             root.calmBusy();
             root.cancelWallFocus();
@@ -349,7 +349,7 @@ BasePopup {
                 return;
             }
             if (root.asusRows === 1 && selectedIndex === 4) {
-                Services.Asus.setChargeLimit(Services.Asus.chargeLimit + dir * 5);
+                Services.Power.setAsusChargeLimit(Services.Power.asusChargeLimit + dir * 5);
                 return;
             }
             const rel = selectedIndex >= 4 + root.asusRows ? selectedIndex - root.asusRows : selectedIndex;
@@ -477,8 +477,8 @@ BasePopup {
     }
 
     function cycleActiveProfile(dir: int): void {
-        if (Services.Asus.available) {
-            Services.Asus.cycleProfile(dir);
+        if (Services.Power.asusAvailable) {
+            Services.Power.cycleAsusProfile(dir);
             return;
         }
         if (!Services.Power.profilesAvailable)
@@ -488,8 +488,8 @@ BasePopup {
     }
 
     function activeProfileOptions(): var {
-        if (Services.Asus.available)
-            return Services.Asus.profileOptions;
+        if (Services.Power.asusAvailable)
+            return Services.Power.asusProfileOptions;
         return Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
     }
     function isDropdownIndex(i: int): bool {
@@ -497,7 +497,7 @@ BasePopup {
     }
     function dropEnabled(i: int): bool {
         if (i === root.sysIdx(7))
-            return Services.Asus.available || Services.Power.profilesAvailable;
+            return Services.Power.asusAvailable || Services.Power.profilesAvailable;
         return true;
     }
     function dropdownOptions(i: int): var {
@@ -513,8 +513,8 @@ BasePopup {
         if (i === root.sysIdx(6))
             return Services.Settings.lidCloseAction;
         if (i === root.sysIdx(7)) {
-            if (Services.Asus.available)
-                return Services.Asus.profile !== "" ? Services.Asus.profile : "…";
+            if (Services.Power.asusAvailable)
+                return Services.Power.asusProfile !== "" ? Services.Power.asusProfile : "…";
             return Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd";
         }
         if (i === root.sysIdx(8))
@@ -525,8 +525,8 @@ BasePopup {
         if (i === root.sysIdx(6))
             Services.Settings.setLidCloseAction(value);
         else if (i === root.sysIdx(7)) {
-            if (Services.Asus.available)
-                Services.Asus.setProfile(value, false);
+            if (Services.Power.asusAvailable)
+                Services.Power.setAsusProfile(value, false);
             else if (Services.Power.profilesAvailable)
                 Services.Power.setProfileByName(value, false);
         } else if (i === root.sysIdx(8))
@@ -699,7 +699,7 @@ BasePopup {
     property int sysIdleH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
     property int sysBattH: (3 + root.asusRows) * Services.Theme.rowHeight + (2 + root.asusRows) * Services.Theme.listSpacing
     property int sysProfH: 2 * Services.Theme.rowHeight + Services.Theme.listSpacing
-    property int asusRows: Services.Asus.available ? 1 : 0
+    property int asusRows: Services.Power.asusAvailable ? 1 : 0
     function sysIdx(n: int): int {
         return n + root.asusRows;
     }

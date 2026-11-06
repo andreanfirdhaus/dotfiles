@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import "../components"
 import "../components/FilterUtils.js" as FilterUtils
 import "../services" as Services
@@ -22,8 +23,8 @@ BasePopup {
     Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     property var appsCache: null
     property var entries: []
-    readonly property bool runMode: String(search.text ?? "").trim().startsWith(">")
-    readonly property string runQuery: String(search.text ?? "").trim().slice(1).trim().toLowerCase().slice(0, 256)
+    readonly property bool cmdMode: String(search.text ?? "").trim().startsWith(">")
+    readonly property string cmdQuery: String(search.text ?? "").trim().slice(1).trim().toLowerCase().slice(0, 256)
     FilterState {
         id: filter
         onRefilterRequested: {
@@ -34,8 +35,8 @@ BasePopup {
     onVisibleChanged: {
         if (visible) {
             root.appsCache = DesktopEntries.applications?.values ?? [];
-            Services.RunMode.refresh();
-            Services.LaunchHistory.load();
+            root.refreshBins();
+            root.loadHistory();
             search.text = "";
             filter.selMoved = false;
             root.refilter();
@@ -44,15 +45,241 @@ BasePopup {
             root.entries = [];
         }
     }
-    Connections {
-        target: Services.RunMode
-        function onBinariesChanged() {
-            if (root.visible && root.runMode)
-                root.refilter();
+
+    property var binaries: []
+    property string binariesPath: ""
+    property double binariesScanned: 0
+    readonly property int binariesTtl: 300000
+    onBinariesChanged: {
+        if (root.visible && root.cmdMode)
+            root.refilter();
+    }
+    function refreshBins(): void {
+        if (binScanner.running) {
+            binScanTimeout.restart();
+            return;
+        }
+        const cur = Quickshell.env("PATH") ?? "";
+        if (root.binaries.length > 0 && cur === root.binariesPath && Date.now() - root.binariesScanned < root.binariesTtl)
+            return;
+        root.binariesPath = cur;
+        root.binariesScanned = Date.now();
+        binScanner.running = true;
+        binScanTimeout.restart();
+    }
+    Process {
+        id: binScanner
+        command: ["sh", "-c", "printf '%s' \"$PATH\" | tr ':' '\\n' | while IFS= read -r d; do [ -n \"$d\" ] && [ -d \"$d\" ] && find \"$d\" -maxdepth 1 \\( -type f -o -type l \\) -executable -printf '%f\\n' 2>/dev/null; done | sort -u | head -n 10000"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                binScanTimeout.stop();
+                const names = text.trim().split("\n").filter(n => n !== "" && n.length < 256);
+                root.binaries = names.map(n => ({name: n, ln: n.toLowerCase()}));
+            }
+        }
+        onExited: exitCode => {
+            binScanTimeout.stop();
+            if (exitCode !== 0 && root.binaries.length === 0)
+                root.binariesScanned = 0;
         }
     }
+    Timer {
+        id: binScanTimeout
+        interval: 15000
+        repeat: false
+        onTriggered: {
+            if (binScanner.running)
+                binScanner.running = false;
+        }
+    }
+
+    property var historyCounts: ({})
+    property var historyPending: []
+    property var historyRetryQueue: []
+    property var historyActiveBatch: []
+    property bool historyLoaded: false
+    property bool historyLoading: false
+    property bool historyRewriting: false
+    property bool historyRewriteQueued: false
+    readonly property string historyFile: Services.Paths.dataPath("launch-history.jsonl")
+    onHistoryLoadedChanged: {
+        if (root.visible)
+            root.refilter();
+    }
+    function lookup(key: string): var {
+        return root.historyCounts[key] ?? {c: 0, t: 0};
+    }
+    function countFor(key: string): int {
+        return root.lookup(key).c;
+    }
+    function lastFor(key: string): real {
+        return root.lookup(key).t;
+    }
+    function recentCmds(prefix: string, limit: int): var {
+        const q = String(prefix ?? "").toLowerCase();
+        const out = [];
+        for (const k of Object.keys(root.historyCounts)) {
+            if (!k.startsWith("cmd:"))
+                continue;
+            const cmd = k.slice(4);
+            if (cmd === "")
+                continue;
+            const lc = cmd.toLowerCase();
+            if (q !== "" && !lc.startsWith(q) && !lc.includes(q))
+                continue;
+            const e = root.historyCounts[k];
+            out.push({name: cmd, key: k, use: e.c, last: e.t});
+        }
+        out.sort((a, b) => (b.last - a.last) || (b.use - a.use));
+        return out.slice(0, Math.max(0, limit));
+    }
+    function record(key: string): void {
+        if (typeof key !== "string" || key === "" || key.length > 512)
+            return;
+        const e = root.lookup(key);
+        e.c += 1;
+        e.t = Date.now();
+        root.historyCounts[key] = e;
+        root.capKeys();
+        const line = JSON.stringify({k: key, t: e.t});
+        if (root.historyLoaded)
+            root.appendLines([line]);
+        else
+            root.historyPending.push(line);
+    }
+    function loadHistory(): void {
+        if (root.historyLoaded || root.historyLoading)
+            return;
+        if (root.historyFile === "")
+            return;
+        root.historyLoading = true;
+        historyReader.running = true;
+    }
+    function capKeys(): void {
+        const keys = Object.keys(root.historyCounts);
+        if (keys.length <= 200)
+            return;
+        keys.sort((a, b) => {
+            const ea = root.historyCounts[a];
+            const eb = root.historyCounts[b];
+            return (eb.c - ea.c) || (eb.t - ea.t);
+        });
+        for (const k of keys.slice(200))
+            delete root.historyCounts[k];
+    }
+    function writeCommand(lines: var, append: bool): var {
+        return ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" ' + (append ? ">>" : ">") + ' "$2"', "qs", lines.join("\n"), root.historyFile];
+    }
+    function appendLines(lines: var): void {
+        for (const l of lines)
+            root.historyRetryQueue.push(l);
+        root.pumpWrites();
+    }
+    function pumpWrites(): void {
+        if (root.historyFile === "")
+            return;
+        if (historyWriter.running || root.historyRewriting || root.historyRetryQueue.length === 0)
+            return;
+        if (root.historyRewriteQueued) {
+            root.historyRewriteQueued = false;
+            root.writeFull();
+            return;
+        }
+        root.historyActiveBatch = root.historyRetryQueue.slice(0, 50);
+        root.historyRetryQueue = root.historyRetryQueue.slice(50);
+        historyWriter.command = root.writeCommand(root.historyActiveBatch, true);
+        historyWriter.running = true;
+    }
+    function writeFull(): void {
+        if (root.historyFile === "")
+            return;
+        if (historyWriter.running || root.historyRewriting) {
+            root.historyRewriteQueued = true;
+            return;
+        }
+        const lines = [];
+        for (const k of Object.keys(root.historyCounts)) {
+            const e = root.historyCounts[k];
+            lines.push(JSON.stringify({k: k, c: e.c, t: e.t}));
+        }
+        root.historyRetryQueue = [];
+        root.historyActiveBatch = [];
+        root.historyRewriting = true;
+        historyWriter.command = root.writeCommand(lines, false);
+        historyWriter.running = true;
+    }
+    Process {
+        id: historyReader
+        command: ["sh", "-c", 'tail -n 2000 "$1" 2>/dev/null || cat "$1" 2>/dev/null', "qs", root.historyFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const counts = root.historyCounts;
+                let lines = 0;
+                for (const line of text.split("\n")) {
+                    if (line.trim() === "")
+                        continue;
+                    lines += 1;
+                    try {
+                        if (line.length > 2048)
+                            continue;
+                        const r = JSON.parse(line);
+                        if (typeof r.k !== "string" || r.k === "" || r.k.length > 512)
+                            continue;
+                        const e = counts[r.k] ?? {c: 0, t: 0};
+                        const dc = (typeof r.c === "number" && isFinite(r.c)) ? Math.max(0, Math.min(100000, r.c)) : 1;
+                        e.c += dc;
+                        if (typeof r.t === "number" && isFinite(r.t) && r.t > e.t)
+                            e.t = Math.min(r.t, Date.now());
+                        counts[r.k] = e;
+                    } catch (_) {}
+                }
+                root.capKeys();
+                if (lines > 1000) {
+                    root.historyPending = [];
+                    root.writeFull();
+                } else if (root.historyPending.length > 0) {
+                    root.appendLines(root.historyPending);
+                    root.historyPending = [];
+                }
+                root.historyLoading = false;
+                root.historyLoaded = true;
+            }
+        }
+        onExited: exitCode => {
+            if (root.historyLoading && !root.historyLoaded) {
+                root.historyLoading = false;
+                root.historyLoaded = true;
+            }
+        }
+    }
+    Process {
+        id: historyWriter
+        onExited: exitCode => {
+            if (exitCode !== 0) {
+                root.historyRetryQueue = root.historyActiveBatch.concat(root.historyRetryQueue);
+                root.historyActiveBatch = [];
+                root.historyRewriting = false;
+                historyRetryTimer.restart();
+                return;
+            }
+            root.historyActiveBatch = [];
+            root.historyRewriting = false;
+            if (root.historyRewriteQueued) {
+                root.historyRewriteQueued = false;
+                root.writeFull();
+                return;
+            }
+            root.pumpWrites();
+        }
+    }
+    Timer {
+        id: historyRetryTimer
+        interval: 5000
+        repeat: false
+        onTriggered: root.pumpWrites()
+    }
     function refreshApps(): void {
-        if (root.visible && !root.runMode) {
+        if (root.visible && !root.cmdMode) {
             root.appsCache = DesktopEntries.applications?.values ?? [];
             root.refilter();
         }
@@ -66,26 +293,19 @@ BasePopup {
             refreshApps();
         }
     }
-    Connections {
-        target: Services.LaunchHistory
-        function onLoadedChanged() {
-            if (root.visible)
-                root.refilter();
-        }
-    }
     function stepSelection(dir: int): void {
         filter.flush();
         stepListView(resultList, dir);
         filter.selMoved = true;
     }
     function refilter(): void {
-        if (root.runMode)
-            root.refilterRun(root.runQuery.slice(0, 256));
+        if (root.cmdMode)
+            root.refilterRun(root.cmdQuery.slice(0, 256));
         else
             root.refilterApps(String(search.text ?? "").toLowerCase().trim().slice(0, 256));
     }
     function hlQuery(): string {
-        return root.runMode ? root.runQuery : String(search.text ?? "").toLowerCase().trim();
+        return root.cmdMode ? root.cmdQuery : String(search.text ?? "").toLowerCase().trim();
     }
     function entryKey(e): string {
         if (!e)
@@ -117,7 +337,7 @@ BasePopup {
             }
             if (best < 4) {
                 const key = "popup:" + def.popup;
-                out.push({name: def.name, ln: name, key: key, popup: def.popup, icon: "", score: best, use: Services.LaunchHistory.countFor(key), last: Services.LaunchHistory.lastFor(key)});
+                out.push({name: def.name, ln: name, key: key, popup: def.popup, icon: "", score: best, use: root.countFor(key), last: root.lastFor(key)});
             }
         }
     }
@@ -152,7 +372,7 @@ BasePopup {
             }
             if (best < 4) {
                 const appKey = "app:" + (app.id ?? name);
-                out.push({name: name, ln: String(name ?? "").toLowerCase(), key: appKey, entry: app, icon: app.icon ?? "", score: best, use: Services.LaunchHistory.countFor(appKey), last: Services.LaunchHistory.lastFor(appKey)});
+                out.push({name: name, ln: String(name ?? "").toLowerCase(), key: appKey, entry: app, icon: app.icon ?? "", score: best, use: root.countFor(appKey), last: root.lastFor(appKey)});
             }
         }
         root.matchSystemActions(q, out);
@@ -162,14 +382,14 @@ BasePopup {
     function refilterRun(q: string): void {
         const out = [];
         const seen = new Set();
-        for (const b of Services.RunMode.binaries ?? []) {
+        for (const b of root.binaries ?? []) {
             const score = FilterUtils.matchScoreLn(b.ln ?? "", q);
             if (score < 4) {
                 seen.add(b.name);
-                out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, icon: "", score: score, use: Services.LaunchHistory.countFor("bin:" + b.name), last: Services.LaunchHistory.lastFor("bin:" + b.name)});
+                out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, icon: "", score: score, use: root.countFor("bin:" + b.name), last: root.lastFor("bin:" + b.name)});
             }
         }
-        for (const c of Services.LaunchHistory.recentCmds(root.runQuery, 5)) {
+        for (const c of root.recentCmds(root.cmdQuery, 5)) {
             if (!seen.has(c.name)) {
                 seen.add(c.name);
                 out.push({name: c.name, ln: c.name.toLowerCase(), key: c.key, icon: "", score: 1, use: c.use, last: c.last, isCmd: true});
@@ -190,15 +410,15 @@ BasePopup {
     }
     function launch(): void {
         filter.flush();
-        if (root.runMode) {
+        if (root.cmdMode) {
             const rest = String(search.text ?? "").trim().slice(1).trim();
             const sel = root.entries[resultList.currentIndex] ?? null;
             if (filter.selMoved && sel) {
                 if (sel.isCmd) {
-                    Services.LaunchHistory.record(sel.key);
+                    root.record(sel.key);
                     root.run(["sh", "-c", sel.name]);
                 } else {
-                    Services.LaunchHistory.record("bin:" + sel.name);
+                    root.record("bin:" + sel.name);
                     root.run([sel.name]);
                 }
                 return;
@@ -208,20 +428,20 @@ BasePopup {
                 if (!picked)
                     return;
                 if (picked.isCmd) {
-                    Services.LaunchHistory.record(picked.key);
+                    root.record(picked.key);
                     root.run(["sh", "-c", picked.name]);
                 } else {
-                    Services.LaunchHistory.record("bin:" + picked.name);
+                    root.record("bin:" + picked.name);
                     root.run([picked.name]);
                 }
                 return;
             }
             const app = root.findApp(rest);
             if (app) {
-                Services.LaunchHistory.record("app:" + (app.id ?? ""));
+                root.record("app:" + (app.id ?? ""));
                 root.runApp(app);
             } else {
-                Services.LaunchHistory.record("cmd:" + rest);
+                root.record("cmd:" + rest);
                 root.run(["sh", "-c", rest]);
             }
             return;
@@ -230,13 +450,13 @@ BasePopup {
         if (!entry)
             return;
         if (entry.popup) {
-            Services.LaunchHistory.record(entry.key ?? ("popup:" + entry.popup));
+            root.record(entry.key ?? ("popup:" + entry.popup));
             bar.togglePopup(entry.popup);
             return;
         }
         if (!entry.entry)
             return;
-        Services.LaunchHistory.record(entry.key ?? ("app:" + (entry.entry.id ?? entry.name ?? "")));
+        root.record(entry.key ?? ("app:" + (entry.entry.id ?? entry.name ?? "")));
         root.runApp(entry.entry);
     }
     function findApp(rest: string): var {
@@ -320,7 +540,7 @@ BasePopup {
     PopupCard {
         SearchField {
             id: search
-            accentBorder: root.runMode
+            accentBorder: root.cmdMode
             catchEscape: true
             onTextChanged: filter.schedule()
             onUpPressed: root.stepSelection(-1)

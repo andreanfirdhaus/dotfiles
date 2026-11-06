@@ -73,14 +73,14 @@ Column {
         spacing: Services.Theme.listSpacing
         z: popup.openDropdown === popup.sysIdx(6) ? 50 : 0
         SettingsSliderRow {
-            visible: Services.Asus.available
+            visible: Services.Power.asusAvailable
             selected: popup.tab === 1 && popup.selectedIndex === 4
             title: "Charge limit"
-            value: Services.Asus.chargeLimit + "%"
+            value: Services.Power.asusChargeLimit + "%"
             sliderMinimum: 20
             sliderMaximum: 100
-            sliderValue: Services.Asus.chargeLimit
-            onSliderMoved: value => Services.Asus.setChargeLimit(Math.round(value / 5) * 5)
+            sliderValue: Services.Power.asusChargeLimit
+            onSliderMoved: value => Services.Power.setAsusChargeLimit(Math.round(value / 5) * 5)
         }
         SettingsSliderRow {
             selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(4)

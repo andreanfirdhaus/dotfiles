@@ -11,6 +11,8 @@ Row {
     property string subtitle: ""
     property int glyphWidth: 18
     property int reserveRight: 58
+    property bool showForget: false
+    signal forgetRequested()
     default property alias trailing: trailer.data
     anchors {
         fill: parent
@@ -50,5 +52,26 @@ Row {
         id: trailer
         anchors.verticalCenter: parent.verticalCenter
         spacing: Services.Theme.popupSpacing
+    }
+    Text {
+        id: forgetButton
+        visible: root.showForget
+        anchors.verticalCenter: parent.verticalCenter
+        width: 24
+        horizontalAlignment: Text.AlignHCenter
+        text: "󰅖"
+        color: root.selected ? Services.Theme.accentFg : forgetArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px13
+        MouseArea {
+            id: forgetArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: mouse => {
+                mouse.accepted = true;
+                root.forgetRequested();
+            }
+        }
     }
 }

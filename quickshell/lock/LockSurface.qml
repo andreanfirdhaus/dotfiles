@@ -116,7 +116,7 @@ Item {
         }
         Image {
             anchors.fill: parent
-            source: root.locked && root.isMain ? Services.Wallpaper.source : ""
+            source: root.locked && root.isMain ? Services.Settings.wallpaperSource : ""
             visible: source !== ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: true

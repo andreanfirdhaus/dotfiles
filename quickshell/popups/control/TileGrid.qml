@@ -64,9 +64,9 @@ Grid {
     }
     Tile {
         glyph: "󰓅"
-        label: Services.Asus.available ? (Services.Asus.profile !== "" ? Services.Asus.profile : "Profile") : (Services.Power.profilesAvailable && Services.Power.profileName !== "" ? Services.Power.profileName : "Profile")
-        active: Services.Asus.available ? Services.Asus.profile === "Performance" : Services.Power.profileName === "performance"
-        available: Services.Asus.available || Services.Power.profilesAvailable
+        label: Services.Power.asusAvailable ? (Services.Power.asusProfile !== "" ? Services.Power.asusProfile : "Profile") : (Services.Power.profilesAvailable && Services.Power.profileName !== "" ? Services.Power.profileName : "Profile")
+        active: Services.Power.asusAvailable ? Services.Power.asusProfile === "Performance" : Services.Power.profileName === "performance"
+        available: Services.Power.asusAvailable || Services.Power.profilesAvailable
         selected: popup.selectedIndex === popup.firstTileIdx() + 6
         onClicked: root.activateTile(6)
     }

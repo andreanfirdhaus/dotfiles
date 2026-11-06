@@ -34,7 +34,7 @@ Rectangle {
     color: popup.selectedKind() === "tray" ? Services.Theme.activeBg : root.collapsedHover ? Services.Theme.hoverBg : Services.Theme.surface
     border.width: popup.selectedKind() === "tray" ? 1 : 0
     border.color: root.collapsedHover ? Services.Theme.fg : Services.Theme.accent
-    height: visible && popup.visible ? (expanded ? Math.max(Services.Theme.rowHeight, shellCol.implicitHeight) : Services.Theme.rowHeight) : 0
+    height: visible && popup.visible ? (expanded ? shellCol.implicitHeight : Services.Theme.rowHeight) : 0
     clip: true
 
     Connections {

@@ -271,8 +271,8 @@ BasePopup {
             audio.muted = !audio.muted;
     }
     function cycleProfileTile(): void {
-        if (Services.Asus.available)
-            Services.Asus.cycleProfile(1);
+        if (Services.Power.asusAvailable)
+            Services.Power.cycleAsusProfile(1);
         else
             Services.Power.cycleProfile();
     }

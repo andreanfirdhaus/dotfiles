@@ -7,15 +7,7 @@ Singleton {
     property bool caffeineActive: false
     property bool dndActive: false
     property bool loaded: false
-    readonly property string modesFile: {
-        const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
-        const home = Quickshell.env("HOME") ?? "";
-        if (xdg !== "")
-            return xdg + "/quickshell/modes.json";
-        if (home !== "")
-            return home + "/.local/share/quickshell/modes.json";
-        return "";
-    }
+    readonly property string modesFile: Paths.dataPath("modes.json")
     function snapshot(): string {
         return JSON.stringify({caffeine: modes.caffeineActive, dnd: modes.dndActive});
     }

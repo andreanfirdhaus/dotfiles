@@ -11,10 +11,6 @@ Item {
     readonly property alias bodyPanel: bodyPanel
     readonly property alias controlPanel: controlPanelPopup
 
-    property bool settingsRequested: false
-    property bool launcherRequested: false
-    property bool clipboardRequested: false
-    property bool emojiRequested: false
     property string pendingOpen: ""
     property var pendingReturnTo: null
     property var coveredPopups: []
@@ -55,14 +51,54 @@ Item {
         root.flushPending();
     }
 
-    readonly property var settingsPopup: settingsLoader.item
-    readonly property var launcherPopup: launcherLoader.item
-    readonly property var clipboardPopup: clipboardLoader.item
-    readonly property var emojiPopup: emojiLoader.item
+    readonly property var popupDefs: [
+        {name: "control", item: controlPanelPopup, right: true},
+        {name: "wifi", item: wifiPopup, right: true},
+        {name: "bluetooth", item: bluetoothPopup, right: true},
+        {name: "power", item: powerPopup, right: true},
+        {name: "settings", loader: settingsLoader, right: true},
+        {name: "launcher", loader: launcherLoader, right: false},
+        {name: "clipboard", loader: clipboardLoader, right: false},
+        {name: "emoji", loader: emojiLoader, right: false}
+    ]
 
-    readonly property var allPopups: [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup, bodyPanel]
-    readonly property var exclusivePopups: [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup]
-    readonly property var rightPopups: [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, bodyPanel]
+    function defFor(name: string): var {
+        for (const d of root.popupDefs) {
+            if (d.name === name)
+                return d;
+        }
+        return null;
+    }
+    function itemFor(def: var): var {
+        if (!def)
+            return null;
+        if (def.item)
+            return def.item;
+        return def.loader ? def.loader.item : null;
+    }
+
+    readonly property var allPopups: {
+        const out = [];
+        for (const d of root.popupDefs)
+            out.push(root.itemFor(d));
+        out.push(bodyPanel);
+        return out;
+    }
+    readonly property var exclusivePopups: {
+        const out = [];
+        for (const d of root.popupDefs)
+            out.push(root.itemFor(d));
+        return out;
+    }
+    readonly property var rightPopups: {
+        const out = [];
+        for (const d of root.popupDefs) {
+            if (d.right)
+                out.push(root.itemFor(d));
+        }
+        out.push(bodyPanel);
+        return out;
+    }
 
     property int rightPopupBottom: {
         const top = Services.Theme.popupTopGap;
@@ -83,28 +119,15 @@ Item {
     }
 
     function popupByName(name: string): var {
-        switch (name) {
-        case "control": return controlPanelPopup;
-        case "wifi": return wifiPopup;
-        case "bluetooth": return bluetoothPopup;
-        case "power": return powerPopup;
-        case "settings": return root.settingsPopup;
-        case "launcher": return root.launcherPopup;
-        case "clipboard": return root.clipboardPopup;
-        case "emoji": return root.emojiPopup;
-        default: return null;
-        }
+        return root.itemFor(root.defFor(name));
     }
     function ensurePopup(name: string): var {
-        if (name === "settings")
-            root.settingsRequested = true;
-        else if (name === "launcher")
-            root.launcherRequested = true;
-        else if (name === "clipboard")
-            root.clipboardRequested = true;
-        else if (name === "emoji")
-            root.emojiRequested = true;
-        return root.popupByName(name);
+        const def = root.defFor(name);
+        if (!def)
+            return null;
+        if (def.loader)
+            def.loader.active = true;
+        return root.itemFor(def);
     }
     function flushPending(): void {
         if (root.pendingOpen === "")
@@ -235,7 +258,6 @@ Item {
     }
     LazyLoader {
         id: settingsLoader
-        active: root.settingsRequested
         component: Component {
             SettingsPopup {
                 bar: root.bar
@@ -245,7 +267,6 @@ Item {
     }
     LazyLoader {
         id: launcherLoader
-        active: root.launcherRequested
         component: Component {
             LauncherPopup {
                 bar: root.bar
@@ -255,7 +276,6 @@ Item {
     }
     LazyLoader {
         id: clipboardLoader
-        active: root.clipboardRequested
         component: Component {
             ClipboardPopup {
                 bar: root.bar
@@ -265,7 +285,6 @@ Item {
     }
     LazyLoader {
         id: emojiLoader
-        active: root.emojiRequested
         component: Component {
             EmojiPopup {
                 bar: root.bar

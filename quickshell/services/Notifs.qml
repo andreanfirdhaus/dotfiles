@@ -18,15 +18,7 @@ Singleton {
     readonly property int unread: notifs.history.filter(h => notifs.isUnread(h)).length
     readonly property int criticalUnread: notifs.history.filter(h => notifs.isUnread(h) && h?.critical === true).length
     property int toastSeq: 0
-    readonly property string historyFile: {
-        const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
-        const home = Quickshell.env("HOME") ?? "";
-        if (xdg !== "")
-            return xdg + "/quickshell/notif-history.json";
-        if (home !== "")
-            return home + "/.local/share/quickshell/notif-history.json";
-        return "";
-    }
+    readonly property string historyFile: Paths.dataPath("notif-history.json")
     function syncIdOf(n): var {
         return n?.hints ? n.hints["x-canonical-private-synchronous"] : undefined;
     }
