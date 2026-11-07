@@ -28,7 +28,7 @@ Rectangle {
         return h;
     }
 
-    visible: entryCount > 0
+    visible: entryCount > 0 && !Services.Theme.trayOnBar
     width: parent.width
     readonly property bool collapsedHover: trayArea.containsMouse
     color: popup.selectedKind() === "tray" ? Services.Theme.activeBg : root.collapsedHover ? Services.Theme.hoverBg : Services.Theme.surface

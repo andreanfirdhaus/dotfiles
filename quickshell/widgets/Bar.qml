@@ -377,6 +377,7 @@ PanelWindow {
             CaffeineIcon {
                 bar: root.bar
             }
+            Tray {}
             MemCpu {
                 bar: root.bar
             }
